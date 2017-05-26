@@ -42,7 +42,7 @@ install:
 test:
 	@echo "Running testsuite"
 	@echo "-----------------"
-	flake8 . && python -m tornado.testing discover -s tornadowebapi -t . -v
+	flake8 . && python -m tornado.testing discover -s tornado_rest_jsonapi -t . -v
 
 .PHONY: docs
 docs:

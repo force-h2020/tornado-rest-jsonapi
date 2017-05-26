@@ -1,7 +1,7 @@
 import unittest
 
-from ..import errors
-from ..import exceptions
+from tornado_rest_jsonapi import errors
+from tornado_rest_jsonapi import exceptions
 
 
 class TestExceptions(unittest.TestCase):

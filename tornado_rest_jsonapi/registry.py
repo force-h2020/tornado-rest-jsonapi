@@ -1,6 +1,6 @@
 from collections import OrderedDict
 
-from tornadowebapi.resource import Resource
+from .resource import Resource
 
 from .utils import url_path_join, with_end_slash
 from .authenticator import NullAuthenticator

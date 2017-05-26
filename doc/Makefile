@@ -236,4 +236,4 @@ uml:
 .PHONY: apidoc
 apidoc:
 	-rm -rf source/api/
-	EXCLUDE_DIRS=`find ../tornadowebapi -type d -name tests` && sphinx-apidoc -o source/api ../tornadowebapi $$EXCLUDE_DIRS
+	EXCLUDE_DIRS=`find ../tornado_rest_jsonapi -type d -name tests` && sphinx-apidoc -o source/api ../tornado_rest_jsonapi $$EXCLUDE_DIRS

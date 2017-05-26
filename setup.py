@@ -13,7 +13,7 @@ with open('README.rst', 'r') as readme:
 def write_version_py():
     filename = os.path.join(
         os.path.dirname(__file__),
-        'tornadowebapi',
+        'tornado_rest_jsonapi',
         'version.py')
     ver = "__version__ = '{}'\n"
     with open(filename, 'w') as fh:
@@ -25,11 +25,11 @@ write_version_py()
 
 # main setup configuration class
 setup(
-    name='tornadowebapi',
+    name='tornado_rest_jsonapi',
     version=VERSION,
-    author='SimPhoNy Project',
+    author='Force Project',
     license='BSD',
-    description='Tornado-based WebAPI framework',
+    description='Tornado-based REST+JSONAPI framework',
     install_requires=[
         "setuptools>=21.0",
         "tornado>=4.3",

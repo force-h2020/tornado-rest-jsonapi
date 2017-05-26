@@ -2,13 +2,12 @@ import urllib.parse
 from collections import OrderedDict
 from unittest import mock
 import http.client
-
-
-from tornado.testing import LogTrapTestCase
-from tornadowebapi.registry import Registry
-from tornadowebapi.tests import resource_handlers
-from tornadowebapi.tests.utils import AsyncHTTPTestCase
 from tornado import web, escape
+from tornado.testing import LogTrapTestCase
+
+from tornado_rest_jsonapi.registry import Registry
+from tornado_rest_jsonapi.tests import resource_handlers
+from tornado_rest_jsonapi.tests.utils import AsyncHTTPTestCase
 
 
 class TestBase(AsyncHTTPTestCase, LogTrapTestCase):

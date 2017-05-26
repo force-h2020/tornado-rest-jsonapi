@@ -5,7 +5,7 @@
 import json
 
 from tornado import escape
-from tornadowebapi.errors import Error, Source
+from .errors import Error, Source
 from .exceptions import BadRequest, InvalidFilters, InvalidSort
 from .schema import get_model_field, get_relationships
 

@@ -2,7 +2,7 @@
 # https://github.com/miLibris/flask-rest-jsonapi
 import http.client
 
-from tornadowebapi.errors import Error, Source
+from .errors import Error, Source
 
 
 class JsonApiException(Exception):

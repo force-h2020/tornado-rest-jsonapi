@@ -1,8 +1,8 @@
 import unittest
 
 from marshmallow_jsonapi import Schema
-from ..pagination import pagination_links
-from ..querystring import QueryStringManager as QSManager
+from tornado_rest_jsonapi.pagination import pagination_links
+from tornado_rest_jsonapi.querystring import QueryStringManager as QSManager
 
 
 class TestPagination(unittest.TestCase):
