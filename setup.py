@@ -27,7 +27,7 @@ write_version_py()
 setup(
     name='tornado_rest_jsonapi',
     version=VERSION,
-    author='Force Project',
+    author='Force H2020 Project',
     license='BSD',
     description='Tornado-based REST+JSONAPI framework',
     install_requires=[
