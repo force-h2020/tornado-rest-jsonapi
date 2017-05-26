@@ -87,4 +87,4 @@ ENV/
 
 # Rope project settings
 .ropeproject
-tornadowebapi/version.py
+tornado_rest_jsonapi/version.py
