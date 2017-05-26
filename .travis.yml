@@ -1,0 +1,29 @@
+language: python
+
+python:
+    - 3.5
+
+sudo: required
+dist: trusty
+addons:
+    firefox: "45.0"
+
+before_install:
+    - sudo make aptdeps
+    - make pythondeps
+
+install:
+    - make install
+
+before_script:
+    - make devdeps
+
+script:
+    - make test
+    - make docs
+
+after_success:
+    - coverage run -m tornado.testing discover
+    - pip install codecov
+    - codecov
+    - bash <(curl -s https://codecov.io/bash)
