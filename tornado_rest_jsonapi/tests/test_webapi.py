@@ -5,7 +5,7 @@ import http.client
 from tornado import web, escape
 from tornado.testing import LogTrapTestCase
 
-from tornado_rest_jsonapi.registry import Registry
+from tornado_rest_jsonapi.api import Api
 from tornado_rest_jsonapi.tests import resource_handlers
 from tornado_rest_jsonapi.tests.utils import AsyncHTTPTestCase
 
@@ -18,18 +18,13 @@ class TestBase(AsyncHTTPTestCase, LogTrapTestCase):
         resource_handlers.StudentDetails.model_connector.id = 0
 
     def get_app(self):
-        registry = Registry()
-        registry.register(
-            resource_handlers.StudentList,
-            "/students/",
-        )
-        registry.register(
-            resource_handlers.StudentDetails,
-            "/students/(.*)/",
-        )
-        handlers = registry.api_handlers('/')
-        app = web.Application(handlers=handlers, debug=True)
+        app = web.Application(debug=True)
         app.hub = mock.Mock()
+        api = Api(app, base_urlpath='/api/v1/')
+        api.route(resource_handlers.StudentList, "students", "/students/")
+        api.route(resource_handlers.StudentDetails,
+                  "student",
+                  "/students/(.*)/")
         return app
 
     def _create_one_student(self, name, age):
