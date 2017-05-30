@@ -1,7 +1,7 @@
 import unittest
 
-from tornadowebapi.errors import jsonapi_errors
-from tornadowebapi.exceptions import ObjectNotFound
+from tornado_rest_jsonapi.errors import jsonapi_errors
+from tornado_rest_jsonapi.exceptions import ObjectNotFound
 
 
 class TestErrors(unittest.TestCase):

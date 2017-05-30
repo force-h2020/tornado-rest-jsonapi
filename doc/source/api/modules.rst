@@ -1,7 +1,7 @@
-tornadowebapi
-=============
+tornado_rest_jsonapi
+====================
 
 .. toctree::
    :maxdepth: 4
 
-   tornadowebapi
+   tornado_rest_jsonapi

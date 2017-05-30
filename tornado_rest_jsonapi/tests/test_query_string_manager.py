@@ -1,9 +1,9 @@
 import unittest
 
 from marshmallow_jsonapi import Schema
-from tornadowebapi.exceptions import BadRequest, InvalidSort
-from tornadowebapi.tests.resource_handlers import StudentSchema
-from ..querystring import QueryStringManager as QSManager
+from tornado_rest_jsonapi.exceptions import BadRequest, InvalidSort
+from tornado_rest_jsonapi.tests.resource_handlers import StudentSchema
+from tornado_rest_jsonapi.querystring import QueryStringManager as QSManager
 
 
 class TestQueryStringManager(unittest.TestCase):

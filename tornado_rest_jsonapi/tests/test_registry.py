@@ -1,7 +1,7 @@
 import unittest
 
-from tornadowebapi.registry import Registry
-from tornadowebapi.tests.resource_handlers import StudentDetails
+from tornado_rest_jsonapi.registry import Registry
+from tornado_rest_jsonapi.tests.resource_handlers import StudentDetails
 
 
 class TestRegistry(unittest.TestCase):

@@ -21,7 +21,7 @@ import os
 import sys
 sys.path.append(os.path.abspath('../../'))
 
-from tornadowebapi import __version__
+from tornado_rest_jsonapi import __version__
 
 # -- General configuration ------------------------------------------------
 

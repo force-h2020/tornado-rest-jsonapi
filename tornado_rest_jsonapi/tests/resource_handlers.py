@@ -2,9 +2,9 @@ from collections import OrderedDict
 
 from marshmallow_jsonapi import Schema, fields
 from tornado import gen
-from tornadowebapi import exceptions
-from tornadowebapi.model_connector import ModelConnector
-from tornadowebapi.resource import ResourceDetails, ResourceList
+from tornado_rest_jsonapi import exceptions
+from tornado_rest_jsonapi.model_connector import ModelConnector
+from tornado_rest_jsonapi.resource import ResourceDetails, ResourceList
 
 
 class WorkingModelConn(ModelConnector):
