@@ -1,14 +1,13 @@
-Tornado WebAPI
---------------
+Tornado REST JSONAPI - Version 0.1.0.dev0
+-----------------------------------------
 
 .. image:: https://readthedocs.org/projects/simphony-remote/badge/?version=latest
    :target: http://simphony-remote.readthedocs.io/en/latest/?badge=latest
    :alt: Documentation Status
 
-This software is developed under the SimPhoNy project, an EU-project funded by
-the 7th Framework Programme (Project number 604005) under the call
-NMP.2013.1.4-1: "Development of an integrated multi-scale modelling environment
-for nanomaterials and systems by design".
+This software is developed under the EU FORCE-H2020 Project. 
+The FORCE project is funded by Horizon 2020 under NMBP-23-2016 call with Grant
+agreement number: 721027.
 
 The package provides a simple framework to perform operations on resources 
 using the tornado framework.
