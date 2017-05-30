@@ -4,6 +4,14 @@ tornado_rest_jsonapi package
 Submodules
 ----------
 
+tornado_rest_jsonapi.api module
+-------------------------------
+
+.. automodule:: tornado_rest_jsonapi.api
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
 tornado_rest_jsonapi.authenticator module
 -----------------------------------------
 
@@ -48,14 +56,6 @@ tornado_rest_jsonapi.querystring module
 ---------------------------------------
 
 .. automodule:: tornado_rest_jsonapi.querystring
-    :members:
-    :undoc-members:
-    :show-inheritance:
-
-tornado_rest_jsonapi.registry module
-------------------------------------
-
-.. automodule:: tornado_rest_jsonapi.registry
     :members:
     :undoc-members:
     :show-inheritance:
