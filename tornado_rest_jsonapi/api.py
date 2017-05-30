@@ -20,6 +20,15 @@ class Api:
     """
 
     def __init__(self, application, base_urlpath="/api"):
+        """Defines an Api for the web application.
+
+        Parameters
+        ----------
+        application: web.Application
+            A tornado web application
+        base_urlpath: str
+            A prefix url to be added to all subsequent urls.
+        """
         self._application = application
         self._register = OrderedDict()
         self._authenticator = NullAuthenticator
@@ -37,26 +46,36 @@ class Api:
     def registered(self):
         return self._register
 
-    def route(self, resource, name, url):
-        """Registers a Resource.
+    def route(self, url, resource, name):
+        """Adds a route for a resource.
         The URL must have at least one capture group for the identifier,
-        if the resource is a Detail resource.
+        if the resource is a Detail resource. URLs for REST are typically
+        in the form
 
         http://example.com/api/v1/images/identifier/
 
+        with pluralized names for collections.
+
+        NOTE: the order is different from flask-rest-jsonapi.
+        We follow the tornado standard for ordering.
+
         Parameters
         ----------
+        url: str
+            URL to bind to the resource. This URL will be prefixed with the
+            base_urlpath as specified at construction, or the default if not
+            specified.
         resource: Resource
             A subclass of the Resource class
         name: str
             A unique string associated to the view for named linkage.
-        url: str
-            URL to bind to the resource.
 
         Raises
         ------
         TypeError:
             if typ is not a subclass of Resource
+        ValueError:
+            if the URL has already been bound.
         """
         if resource is None or not issubclass(resource, Resource):
             raise TypeError("resource must be a subclass of Resource")

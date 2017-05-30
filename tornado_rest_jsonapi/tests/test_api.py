@@ -12,7 +12,7 @@ class TestApi(unittest.TestCase):
         api = Api(app)
 
         # Register the classes.
-        api.route(StudentDetails, "student", "/students/(.*)/")
+        api.route("/students/(.*)/", StudentDetails, "student")
 
         self.assertTrue(app.wildcard_router.add_rules.called)
 
@@ -20,19 +20,19 @@ class TestApi(unittest.TestCase):
         app = Mock()
         api = Api(app)
 
-        api.route(StudentDetails, "student", "/students/(.*)/")
+        api.route("/students/(.*)/", StudentDetails, "student")
         with self.assertRaises(ValueError):
-            api.route(StudentDetails, "student", "/students/(.*)/")
+            api.route("/students/(.*)/", StudentDetails, "student")
 
     def test_incorrect_class_registration(self):
         app = Mock()
         api = Api(app)
 
         with self.assertRaises(TypeError):
-            api.route("hello", "student", "/students/(.*)/")
+            api.route("/students/(.*)/", "hello", "student")
 
         with self.assertRaises(TypeError):
-            api.route(int, "student", "/students/(.*)/")
+            api.route("/students/(.*)/", int, "student")
 
     def test_authenticator(self):
         app = Mock()
