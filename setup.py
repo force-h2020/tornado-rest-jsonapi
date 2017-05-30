@@ -32,7 +32,7 @@ setup(
     description='Tornado-based REST+JSONAPI framework',
     install_requires=[
         "setuptools>=21.0",
-        "tornado>=4.3",
+        "tornado>=4.5",
         "marshmallow>=2.13",
         "marshmallow_jsonapi>=0.14",
     ],
