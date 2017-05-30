@@ -6,7 +6,7 @@ from .utils import url_path_join, with_end_slash
 from .authenticator import NullAuthenticator
 
 
-class Registry:
+class Api:
     """Main class that registers the defined resources,
     and provides the appropriate handlers for tornado.
 
@@ -19,9 +19,11 @@ class Registry:
     Tornado Application.
     """
 
-    def __init__(self):
+    def __init__(self, application, base_urlpath="/api"):
+        self._application = application
         self._register = OrderedDict()
         self._authenticator = NullAuthenticator
+        self._base_urlpath = base_urlpath
 
     @property
     def authenticator(self):
@@ -35,11 +37,10 @@ class Registry:
     def registered(self):
         return self._register
 
-    def register(self, resource, url):
-        """Registers a Model Connector.
-        The associated resource will be used to determine the URL
-        representing the resource collections. For example, a resource Image
-        will have URLs of the type
+    def route(self, resource, name, url):
+        """Registers a Resource.
+        The URL must have at least one capture group for the identifier,
+        if the resource is a Detail resource.
 
         http://example.com/api/v1/images/identifier/
 
@@ -47,6 +48,10 @@ class Registry:
         ----------
         resource: Resource
             A subclass of the Resource class
+        name: str
+            A unique string associated to the view for named linkage.
+        url: str
+            URL to bind to the resource.
 
         Raises
         ------
@@ -66,44 +71,16 @@ class Registry:
                 ))
 
         self._register[url] = resource
-
-    def api_handlers(self, base_urlpath, version="v1"):
-        """Returns the API handlers for the interface.
-        Add these handlers to your application to provide an
-        interface to your Resources.
-
-
-        Parameters
-        ----------
-        base_urlpath: str
-            The base url path to serve
-        version: str
-            A string identifying the version of the API.
-
-        Notes
-        -----
-        The current implementation does not support multiple API versions yet.
-        The version option is only provided for futureproofing.
-        """
-        init_args = dict(
+        target_kwargs = dict(
             registry=self,
-            base_urlpath=base_urlpath,
+            base_urlpath=self._base_urlpath
         )
 
-        handlers = []
-        for url, resource in self._register.items():
-            handlers.append(
-                (
-                    with_end_slash(
-                        url_path_join(base_urlpath,
-                                      "api",
-                                      version,
-                                      url
-                                      )
-                    ),
-                    resource,
-                    init_args
-                )
+        self._application.wildcard_router.add_rules([
+            (
+                with_end_slash(url_path_join(self._base_urlpath, url)),
+                resource,
+                target_kwargs,
+                name
             )
-
-        return handlers
+        ])
