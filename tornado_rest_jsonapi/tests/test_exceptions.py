@@ -101,3 +101,12 @@ class TestExceptions(unittest.TestCase):
                     "parameter": "sort"
                 }
             }])
+
+    def test_unable(self):
+        exc = exceptions.Unable()
+        self.assertEqual(
+            exc.to_jsonapi(),
+            [{
+                "status": '500',
+                "title": "Unable to perform operation",
+            }])

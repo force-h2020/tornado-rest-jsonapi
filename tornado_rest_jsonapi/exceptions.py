@@ -124,3 +124,8 @@ class InvalidType(JsonApiException):
 class InvalidIdentifier(JsonApiException):
     status = http.client.CONFLICT
     title = "Invalid identifier"
+
+
+class Unable(JsonApiException):
+    status = http.client.INTERNAL_SERVER_ERROR
+    title = "Unable to perform operation"
