@@ -1,53 +1,26 @@
-Tornado-WebAPI documentation
-============================
+Tornado-REST-JSONAPI documentation
+==================================
 
-Tornado WebAPI is a Resource based Create-Retrieve-Update-Delete framework
-built on top of Tornado.
+Tornado REST JSONAPI is a Resource based Create-Retrieve-Update-Delete
+framework built on top of Tornado.
 
-It provides a WebAPI endpoint and the javascript objects to manipulate the resources.
+Introduction
+------------
 
-Example
--------
+To define a Resource, you need three components:
 
-In python, you reimplement a `Resource` object, and define its behavior for the various
-actions::
+- A ``Schema``, that defines the input and output structure of the Resource
+- A ``ModelConnector``, that defines how to transform a REST request into
+  an action on the Model object.
+- and A ``Resource`` subclass, which combines the two above and converts the
+  web request into an appropriate form for manipulation by the ModelConnector.
 
-    class MyResource(Resource):
-        @gen.coroutine
-        @authenticated
-        def delete(self, identifier):
-            # define what to do when deleting the resource.
-
-        @gen.coroutine
-        @authenticated
-        def create(self, representation):
-            # Define what to do when create happens
+The binding is defined declaratively, and the resource must be registered
+through an Api object. This object normally resides on your Tornado
+application.
 
 
-In the Web Application, create a registry, register your resources, and get the handlers::
 
-        base_urlpath = '/basepath/'
-        reg = Registry()
-        reg.register(MyResource)
-        handlers = reg.api_handlers(base_urlpath)
-
-These handlers are installed on tornado as usual, and provide collection and resource
-URLs, like::
-
-    /basepath/api/v1/myresources/
-    
-JavaScript code (needs require.js and jquery properly setup) is found at::
- 
-    /basepath/jsapi/v1/resources.js
-
-it's a module that can be used to create the resource by passing a object
-representation, as in::
-
-    require('resources'), function(resources) {
-        resources.MyResource.create({ foo: bar })
-        // or
-        resources.MyResource.delete("resourceid");
-    }
 
 .. toctree::
    :maxdepth: 1
