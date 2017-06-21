@@ -19,6 +19,12 @@ The binding is defined declaratively, and the resource must be registered
 through an Api object. This object normally resides on your Tornado
 application.
 
+Tornado-REST-JSONAPI is similar, but not equal, to Flask-REST-JSONAPI.
+Some differences exists in nomenclature to accommodate for the intrinsic
+difference between Flask and Tornado, but the overall design is similar.
+We refer to the documentation of Flask-REST-JSONAPI for a general understanding.
+
+
 
 
 
