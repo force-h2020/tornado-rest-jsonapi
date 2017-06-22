@@ -21,10 +21,11 @@ class TestBase(AsyncHTTPTestCase, LogTrapTestCase):
         app = web.Application(debug=True)
         app.hub = mock.Mock()
         api = Api(app, base_urlpath='/api/v1/')
-        api.route("/students/", resource_handlers.StudentList, "students")
-        api.route("/students/(.*)/",
-                  resource_handlers.StudentDetails,
-                  "student")
+        api.route(resource_handlers.StudentList, "students", "/students/")
+        api.route(
+            resource_handlers.StudentDetails,
+            "student",
+            "/students/(.*)/")
         return app
 
     def _create_one_student(self, name, age):
