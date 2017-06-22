@@ -1,0 +1,29 @@
+{
+  "name": "tornado-rest-jsonapi",
+  "version": "1.0.0",
+  "description": "Tornado REST JSONAPI - Version 0.1.0.dev0 -----------------------------------------",
+  "main": "index.js",
+  "directories": {
+    "doc": "doc"
+  },
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "watch": "webpack --watch"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/force-h2020/tornado-rest-jsonapi.git"
+  },
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/force-h2020/tornado-rest-jsonapi/issues"
+  },
+  "homepage": "https://github.com/force-h2020/tornado-rest-jsonapi#readme",
+  "dependencies": {
+    "devour-client": "^1.4.3"
+  },
+  "devDependencies": {
+    "webpack": "^3.0.0"
+  }
+}
