@@ -46,7 +46,7 @@ class Api:
     def registered(self):
         return self._register
 
-    def route(self, url, resource, name):
+    def route(self, resource, view, *urls, **kwargs):
         """Adds a route for a resource.
         The URL must have at least one capture group for the identifier,
         if the resource is a Detail resource. URLs for REST are typically
@@ -56,50 +56,56 @@ class Api:
 
         with pluralized names for collections.
 
-        NOTE: the order is different from flask-rest-jsonapi.
-        We follow the tornado standard for ordering.
-
         Parameters
         ----------
-        url: str
+        resource: Resource
+            A subclass of the Resource class
+        view: str
+            A unique string associated to the view for named linkage.
+        *urls: str
             URL to bind to the resource. This URL will be prefixed with the
             base_urlpath as specified at construction, or the default if not
             specified.
-        resource: Resource
-            A subclass of the Resource class
-        name: str
-            A unique string associated to the view for named linkage.
+        **kwargs: dict
+            Additional keyword arguments to pass to the Resource
+            while handling the request.
 
         Raises
         ------
         TypeError:
-            if typ is not a subclass of Resource
+            if resource is not a subclass of Resource
         ValueError:
-            if the URL has already been bound.
+            if an URL has already been bound.
         """
         if resource is None or not issubclass(resource, Resource):
             raise TypeError("resource must be a subclass of Resource")
 
-        if url in self._register:
-            raise ValueError(
-                "url {} is already in use by "
-                "{}, so it cannot be used by {}".format(
-                    url,
-                    self._register[url].__name__,
-                    resource.__name__
-                ))
+        for url in urls:
+            if url in self._register:
+                raise ValueError(
+                    "url {} is already in use by "
+                    "{}, so it cannot be used by {}".format(
+                        url,
+                        self._register[url].__name__,
+                        resource.__name__
+                    ))
 
-        self._register[url] = resource
-        target_kwargs = dict(
-            registry=self,
-            base_urlpath=self._base_urlpath
-        )
+        for url in urls:
+            self._register[url] = resource
 
-        self._application.wildcard_router.add_rules([
-            (
-                with_end_slash(url_path_join(self._base_urlpath, url)),
-                resource,
-                target_kwargs,
-                name
+            target_kwargs = dict(kwargs)
+            target_kwargs.update(
+                dict(
+                    registry=self,
+                    base_urlpath=self._base_urlpath
+                )
             )
-        ])
+
+            self._application.wildcard_router.add_rules([
+                (
+                    with_end_slash(url_path_join(self._base_urlpath, url)),
+                    resource,
+                    target_kwargs,
+                    view
+                )
+            ])
