@@ -69,7 +69,7 @@ class ApplicationSchema(Schema):
     class Meta:
         type_ = 'applications'
     id = fields.Int()
-    name = fields.String(required=True, dump_only=True)
+    name = fields.String(required=True)
 
 
 class ApplicationModel(ModelConnector):
