@@ -13,9 +13,9 @@ from tornado_rest_jsonapi.tests.utils import AsyncHTTPTestCase
 class TestBase(AsyncHTTPTestCase, LogTrapTestCase):
     def setUp(self):
         super().setUp()
-        resource_handlers.StudentDetails.model_connector.collection = \
+        resource_handlers.StudentDetails.data_layer["class"].collection = \
             OrderedDict()
-        resource_handlers.StudentDetails.model_connector.id = 0
+        resource_handlers.StudentDetails.data_layer["class"].id = 0
 
     def get_app(self):
         app = web.Application(debug=True)
@@ -61,17 +61,17 @@ class TestCRUDAPI(TestBase):
                           }})
 
         resource = resource_handlers.StudentDetails
-        connector = resource.model_connector
+        data_layer_cls = resource.data_layer["class"]
 
-        connector.collection[1] = dict(
+        data_layer_cls.collection[1] = dict(
             id="1",
             name="john wick",
             age=39)
-        connector.collection[2] = dict(
+        data_layer_cls.collection[2] = dict(
             id="2",
             name="john wick 2",
             age=39)
-        connector.collection[3] = dict(
+        data_layer_cls.collection[3] = dict(
             id="3",
             name="john wick 3",
             age=39)

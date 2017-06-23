@@ -47,9 +47,12 @@ class Resource(web.RequestHandler):
 
     def get_data_layer(self):
         data_layer_cls = self.data_layer["class"]
-        return data_layer_cls(
-            application=self.application,
-            current_user=self.current_user)
+        data_layer_kwargs = dict(self.data_layer)
+        data_layer_kwargs.pop("class", None)
+        data_layer_kwargs["application"] = self.application
+        data_layer_kwargs["current_user"] = self.current_user
+
+        return data_layer_cls(**data_layer_kwargs)
 
     def write_error(self, status_code, **kwargs):
         """Provides appropriate payload to the response in case of error.

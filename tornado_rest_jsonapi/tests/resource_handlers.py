@@ -4,11 +4,11 @@ from marshmallow_jsonapi import Schema, fields
 from tornado import gen
 
 from tornado_rest_jsonapi import exceptions
-from tornado_rest_jsonapi.data_layers.base import ModelConnector
+from tornado_rest_jsonapi.data_layers.base import BaseDataLayer
 from tornado_rest_jsonapi.resource import ResourceDetails, ResourceList
 
 
-class WorkingDataLayer(ModelConnector):
+class WorkingDataLayer(BaseDataLayer):
     """Base class for tests. Still missing the resource_class
     that must be set in the derived class."""
 
@@ -70,18 +70,18 @@ class StudentSchema(Schema):
     age = fields.Int(required=True)
 
 
-class StudentModelConn(WorkingModelConn):
-    pass
-
-
 class StudentDetails(ResourceDetails):
     schema = StudentSchema
-    model_connector = StudentModelConn
+    data_layer = {
+        "class": WorkingDataLayer
+    }
 
 
 class StudentList(ResourceList):
     schema = StudentSchema
-    model_connector = StudentModelConn
+    data_layer = {
+        "class": WorkingDataLayer,
+    }
 
 
 # class Teacher(Schema):
