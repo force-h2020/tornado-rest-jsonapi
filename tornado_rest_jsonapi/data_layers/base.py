@@ -1,7 +1,7 @@
 from tornado import gen, log
 
 
-class ModelConnector:
+class BaseDataLayer:
     """Base class for model connectors.
     To implement a new ModelConnector class, inherit from this subclass
     and reimplement the methods with the appropriate

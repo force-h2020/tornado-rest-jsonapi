@@ -17,7 +17,7 @@ _CONTENT_TYPE_JSONAPI = 'application/vnd.api+json'
 
 
 class Resource(web.RequestHandler):
-    model_connector = None
+    data_layer = None
     schema = None
 
     def initialize(self, registry, base_urlpath):
@@ -45,8 +45,9 @@ class Resource(web.RequestHandler):
     def log(self):
         return app_log
 
-    def get_model_connector(self):
-        return self.model_connector(
+    def get_data_layer(self):
+        data_layer_cls = self.data_layer["class"]
+        return data_layer_cls(
             application=self.application,
             current_user=self.current_user)
 
@@ -122,10 +123,10 @@ class ResourceList(Resource):
     """
     @gen.coroutine
     def get(self):
-        connector = self.get_model_connector()
+        data_layer = self.get_data_layer()
         qs = QSManager(self.request.arguments, self.schema)
 
-        items, total_num = yield connector.retrieve_collection(qs)
+        items, total_num = yield data_layer.retrieve_collection(qs)
 
         schema = compute_schema(self.schema,
                                 {"many": True},
@@ -139,7 +140,7 @@ class ResourceList(Resource):
 
     @gen.coroutine
     def post(self):
-        connector = self.get_model_connector()
+        data_layer = self.get_data_layer()
         qs = QSManager(self.request.arguments, self.schema)
 
         json_data = escape.json_decode(self.request.body)
@@ -169,7 +170,7 @@ class ResourceList(Resource):
         if errors:
             raise exceptions.BadRequest(errors_from_jsonapi_errors(errors))
 
-        identifier = yield connector.create_object(data)
+        identifier = yield data_layer.create_object(data)
 
         self._send_created_to_client(identifier)
 
@@ -189,14 +190,14 @@ class ResourceDetails(Resource):
     @gen.coroutine
     def get(self, identifier):
         """Retrieves the resource representation."""
-        connector = self.get_model_connector()
+        data_layer = self.get_data_layer()
         qs = QSManager(self.request.arguments, self.schema)
         schema = compute_schema(self.schema,
                                 {},
                                 qs,
                                 qs.include)
 
-        obj = yield connector.retrieve_object(identifier)
+        obj = yield data_layer.retrieve_object(identifier)
 
         result = schema.dump(obj).data
 
@@ -204,7 +205,7 @@ class ResourceDetails(Resource):
 
     @gen.coroutine
     def patch(self, identifier):
-        connector = self.get_model_connector()
+        data_layer = self.get_data_layer()
         qs = QSManager(self.request.arguments, self.schema)
 
         json_data = escape.json_decode(self.request.body)
@@ -238,7 +239,7 @@ class ResourceDetails(Resource):
         if str(json_data['data']['id']) != identifier:
             raise exceptions.InvalidIdentifier()
 
-        updated_obj = yield connector.update_object(identifier, data)
+        updated_obj = yield data_layer.update_object(identifier, data)
 
         result = schema.dump(updated_obj).data
 
@@ -249,10 +250,10 @@ class ResourceDetails(Resource):
         """This operation is not possible in REST, and results
         in either Conflict or NotFound, depending on the
         presence of a resource at the given URL"""
-        connector = self.get_model_connector()
+        data_layer = self.get_data_layer()
 
         try:
-            yield connector.retrieve_object(identifier)
+            yield data_layer.retrieve_object(identifier)
         except exceptions.ObjectNotFound:
             raise
         else:
@@ -261,8 +262,8 @@ class ResourceDetails(Resource):
     @gen.coroutine
     def delete(self, identifier):
         """Deletes the resource."""
-        connector = self.get_model_connector()
+        data_layer = self.get_data_layer()
 
-        yield connector.delete_object(identifier)
+        yield data_layer.delete_object(identifier)
 
         self._send_to_client(None)

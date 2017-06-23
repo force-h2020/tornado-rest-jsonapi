@@ -1,7 +1,8 @@
 from unittest.mock import Mock
 
 from tornado.testing import AsyncTestCase, gen_test
-from tornado_rest_jsonapi.model_connector import ModelConnector
+
+from tornado_rest_jsonapi.data_layers.base import ModelConnector
 
 
 class TestModelConnector(AsyncTestCase):

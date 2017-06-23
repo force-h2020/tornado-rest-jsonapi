@@ -2,12 +2,13 @@ from collections import OrderedDict
 
 from marshmallow_jsonapi import Schema, fields
 from tornado import gen
+
 from tornado_rest_jsonapi import exceptions
-from tornado_rest_jsonapi.model_connector import ModelConnector
+from tornado_rest_jsonapi.data_layers.base import ModelConnector
 from tornado_rest_jsonapi.resource import ResourceDetails, ResourceList
 
 
-class WorkingModelConn(ModelConnector):
+class WorkingDataLayer(ModelConnector):
     """Base class for tests. Still missing the resource_class
     that must be set in the derived class."""
 
