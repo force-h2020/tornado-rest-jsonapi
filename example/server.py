@@ -67,7 +67,7 @@ class ModelConnector(ModelConnectorBase):
 
 class ApplicationSchema(Schema):
     class Meta:
-        type_ = 'applications'
+        type_ = 'application'
     id = fields.Int()
     name = fields.String(required=True)
 
@@ -96,8 +96,8 @@ server = web.Application([
 ])
 
 jsonapi = Api(server, base_urlpath='/api')
-jsonapi.route('/applications/', ApplicationList, 'application_list')
-jsonapi.route('/applications/(.*)', ApplicationDetails, 'application_details')
+jsonapi.route(ApplicationList, 'application_list', '/applications/')
+jsonapi.route(ApplicationDetails, 'application_detail', '/applications/(.*)')
 
 server.listen(8888)
 ioloop.IOLoop.current().start()
