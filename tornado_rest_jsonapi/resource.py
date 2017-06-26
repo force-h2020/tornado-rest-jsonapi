@@ -111,7 +111,7 @@ class Resource(web.RequestHandler):
 
         location = with_end_slash(url)
 
-        self.set_status(http.client.CREATED)
+        self.set_status(int(http.client.CREATED))
         self.set_header("Location", location)
         self.clear_header('Content-Type')
         self.flush()
@@ -176,11 +176,11 @@ class ResourceList(Resource):
     @gen.coroutine
     def put(self):
         """You cannot PUT on a collection"""
-        raise HTTPError(http.client.METHOD_NOT_ALLOWED)
+        raise HTTPError(int(http.client.METHOD_NOT_ALLOWED))
 
     @gen.coroutine
     def delete(self):
-        raise HTTPError(http.client.METHOD_NOT_ALLOWED)
+        raise HTTPError(int(http.client.METHOD_NOT_ALLOWED))
 
 
 class ResourceDetails(Resource):
