@@ -17,8 +17,8 @@ class ModelConnector(ModelConnectorBase):
     @gen.coroutine
     def create_object(self, data, **kwargs):
         id = str(type(self).id)
-        print("Create object with id:", id)
-        print("Data:", data)
+        print("\nCreate object with id:", id)
+        print("New Data:", data)
         data["id"] = id
         self.collection[id] = data
         type(self).id += 1
@@ -26,6 +26,7 @@ class ModelConnector(ModelConnectorBase):
 
     @gen.coroutine
     def retrieve_object(self, identifier, **kwargs):
+        print("\nRetrieve object with id:", identifier)
         if identifier not in self.collection:
             raise exceptions.ObjectNotFound()
 
@@ -33,13 +34,18 @@ class ModelConnector(ModelConnectorBase):
 
     @gen.coroutine
     def update_object(self, identifier, data, **kwargs):
+        print("\nUpdate object with id:", identifier)
         if identifier not in self.collection:
             raise exceptions.ObjectNotFound()
+
+        print("Old Data:", self.collection[identifier])
+        print("New Data:", data)
 
         self.collection[identifier].update(data)
 
     @gen.coroutine
     def delete_object(self, identifier, **kwargs):
+        print("\nDelete object with id:", identifier)
         if identifier not in self.collection:
             raise exceptions.ObjectNotFound()
 
@@ -47,6 +53,7 @@ class ModelConnector(ModelConnectorBase):
 
     @gen.coroutine
     def retrieve_collection(self, qs, **kwargs):
+        print("\nRetrieve collection")
         pagination = qs.pagination
 
         number = pagination.get("number", 0)

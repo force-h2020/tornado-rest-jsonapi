@@ -95,7 +95,7 @@ class Resource(web.RequestHandler):
             response["jsonapi"] = {
                 "version": "1.0"
             }
-
+        print("Send to client:", response)
         self.set_status(http.client.OK)
         self.write(escape.json_encode(response))
         self.flush()
@@ -111,7 +111,7 @@ class Resource(web.RequestHandler):
 
         location = with_end_slash(url)
 
-        self.set_status(http.client.CREATED.value)
+        self.set_status(http.client.CREATED)
         self.set_header("Location", location)
         self.clear_header('Content-Type')
         self.flush()
@@ -170,17 +170,17 @@ class ResourceList(Resource):
             raise exceptions.BadRequest(errors_from_jsonapi_errors(errors))
 
         identifier = yield connector.create_object(data)
-
+        print("POST Call with:", identifier)
         self._send_created_to_client(identifier)
 
     @gen.coroutine
     def put(self):
         """You cannot PUT on a collection"""
-        raise HTTPError(http.client.METHOD_NOT_ALLOWED.value)
+        raise HTTPError(http.client.METHOD_NOT_ALLOWED)
 
     @gen.coroutine
     def delete(self):
-        raise HTTPError(http.client.METHOD_NOT_ALLOWED.value)
+        raise HTTPError(http.client.METHOD_NOT_ALLOWED)
 
 
 class ResourceDetails(Resource):
