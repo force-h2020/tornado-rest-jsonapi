@@ -3,6 +3,7 @@ from collections import OrderedDict
 from tornado import gen, ioloop, web
 
 from marshmallow_jsonapi import Schema, fields
+from marshmallow import Schema as NestedSchema
 
 from tornado_rest_jsonapi import exceptions, Api
 from tornado_rest_jsonapi.model_connector import (ModelConnector
@@ -70,11 +71,16 @@ class ModelConnector(ModelConnectorBase):
         return values, len(self.collection.values())
 
 
+class PolicySchema(NestedSchema):
+    allow_home = fields.Bool(required=True)
+
+
 class ApplicationSchema(Schema):
     class Meta:
         type_ = 'applications'
     id = fields.Int()
     name = fields.String(required=True)
+    policy = fields.Nested(PolicySchema)
 
 
 class ApplicationModel(ModelConnector):
