@@ -72,7 +72,7 @@ class ModelConnector(ModelConnectorBase):
 
 
 class PolicySchema(NestedSchema):
-    allow_home = fields.Bool(required=True)
+    allow_home = fields.Boolean(required=True)
 
 
 class ApplicationSchema(Schema):
@@ -80,7 +80,7 @@ class ApplicationSchema(Schema):
         type_ = 'applications'
     id = fields.Int()
     name = fields.String(required=True)
-    policy = fields.Nested(PolicySchema)
+    policy = fields.Nested(PolicySchema, required=True)
 
 
 class ApplicationModel(ModelConnector):

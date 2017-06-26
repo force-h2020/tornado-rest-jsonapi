@@ -18450,11 +18450,15 @@ var jsonApi = new JsonApi({
 });
 
 jsonApi.define('application', {
-  name: ''
+  name: '',
+  policy: {}
 });
 
 jsonApi.create('application', {
-  name: 'Mayavi'
+  name: 'Mayavi',
+  policy: {
+    allow_home: true
+  }
 })
 .then(function(result) {
   console.log('Mayavi id:', result);
@@ -18463,7 +18467,10 @@ jsonApi.create('application', {
     console.log('application 0:', result);
 
     jsonApi.create('application', {
-      name: 'Jupyter Notebook'
+      name: 'Jupyter Notebook',
+      policy: {
+        allow_home: false
+      }
     })
     .then(function(result) {
       console.log('Jupyter Notebook id:', result);
