@@ -1,5 +1,3 @@
-import os
-
 from collections import OrderedDict
 
 from tornado import gen, ioloop, web
@@ -89,6 +87,7 @@ class ApplicationList(ResourceList):
 class MainHandler(web.RequestHandler):
     def get(self, *args):
         self.render('index.html')
+
 
 server = web.Application([
     (r'/', MainHandler),
