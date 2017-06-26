@@ -67,7 +67,7 @@ class ModelConnector(ModelConnectorBase):
 
 class ApplicationSchema(Schema):
     class Meta:
-        type_ = 'application'
+        type_ = 'applications'
     id = fields.Int()
     name = fields.String(required=True)
 
