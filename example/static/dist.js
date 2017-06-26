@@ -18474,6 +18474,16 @@ jsonApi.create('application', {
         jsonApi.destroy('application', 0).then(function() {
           jsonApi.findAll('applications').then(function(result) {
             console.log('applications:', result);
+
+            jsonApi.update('application', {
+              id: 1,
+              name: 'Jupyter Notebook2'
+            })
+            .then(function() {
+              jsonApi.findAll('applications').then(function(result) {
+                console.log('applications:', result);
+              });
+            });
           });
         });
       });
