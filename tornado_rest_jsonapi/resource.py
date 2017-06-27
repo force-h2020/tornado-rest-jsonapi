@@ -9,7 +9,7 @@ from tornado.web import HTTPError
 from . import exceptions
 from .errors import jsonapi_errors, errors_from_jsonapi_errors
 from .pagination import pagination_links
-from .schema import compute_schema
+from .schema import compute_schema, get_relationships, get_model_field
 from .utils import with_end_slash, url_path_join
 from .querystring import QueryStringManager as QSManager
 
@@ -81,14 +81,26 @@ class Resource(web.RequestHandler):
             self.clear_header('Content-Type')
             self.finish()
 
-    def _send_to_client(self, entity):
+    def _send_to_client(self, entity, status_code=None):
         """Convenience method to send a given entity to a client.
         Serializes it and puts the right headers.
-        If entity is None, sets no content http response."""
+        If entity is None, sets no content http response.
+
+        Parameters
+        ----------
+        entity:
+            The entity to return to the client. Must be either
+            JSON encodable (e.g. a dict) or None. If None, the
+            status of NO_CONTENT will be automatically specified.
+
+        """
 
         if entity is None:
             self.clear_header('Content-Type')
-            self.set_status(http.client.NO_CONTENT)
+            if status_code is None:
+                self.set_status(http.client.NO_CONTENT)
+            else:
+                self.set_status(status_code)
             return
 
         self.set_header("Content-Type", _CONTENT_TYPE_JSONAPI)
@@ -100,7 +112,11 @@ class Resource(web.RequestHandler):
                 "version": "1.0"
             }
 
-        self.set_status(http.client.OK)
+        if status_code is None:
+            self.set_status(http.client.OK)
+        else:
+            self.set_status(status_code)
+
         self.write(escape.json_encode(response))
         self.flush()
 
@@ -273,31 +289,32 @@ class ResourceDetails(Resource):
 
 
 class ResourceRelationship(Resource):
-
     def get(self, *args, **kwargs):
         """Get a relationship details
         """
-        relationship_field, model_relationship_field, related_type_, related_id_field = self._get_relationship_data()
-        related_view = self.schema._declared_fields[relationship_field].related_view
-        related_view_kwargs = self.schema._declared_fields[relationship_field].related_view_kwargs
+        (relationship_field,
+         model_relationship_field,
+         related_type_,
+         related_id_field) = self._get_relationship_data()
 
-        obj, data = self._data_layer.get_relationship(model_relationship_field,
-                                                      related_type_,
-                                                      related_id_field,
-                                                      kwargs)
+        declared_field = self.schema._declared_fields[relationship_field]
+        related_view = declared_field.related_view
+        related_view_args = declared_field.related_view_args
 
-        for key, value in copy(related_view_kwargs).items():
-            if isinstance(value, str) and value.startswith('<') and value.endswith('>'):
-                tmp_obj = obj
-                for field in value[1:-1].split('.'):
-                    tmp_obj = getattr(tmp_obj, field)
-                related_view_kwargs[key] = tmp_obj
+        data_layer = self.get_data_layer()
+        obj, data = data_layer.get_relationship(
+            model_relationship_field,
+            related_type_,
+            related_id_field,
+            kwargs)
 
-        result = {'links': {'self': request.path,
-                            'related': url_for(related_view, **related_view_kwargs)},
+        result = {'links': {'self': self.request.full_url(),
+                            'related': self.reverse_url(
+                                related_view, *related_view_args
+                            )},
                   'data': data}
 
-        qs = QSManager(request.args, self.schema)
+        qs = QSManager(self.request.arguments, self.schema)
         if qs.include:
             schema = compute_schema(self.schema, dict(), qs, qs.include)
 
@@ -309,123 +326,174 @@ class ResourceRelationship(Resource):
     def post(self, *args, **kwargs):
         """Add / create relationship(s)
         """
-        json_data = request.get_json()
+        json_data = escape.json_decode(self.request.body)
 
-        relationship_field, model_relationship_field, related_type_, related_id_field = self._get_relationship_data()
+        (relationship_field,
+         model_relationship_field,
+         related_type_,
+         related_id_field) = self._get_relationship_data()
 
         if 'data' not in json_data:
-            raise BadRequest('/data', 'You must provide data with a "data" route node')
+            raise exceptions.BadRequest.from_pointer_and_message(
+                '/data',
+                'You must provide data with a "data" route node')
+
         if isinstance(json_data['data'], dict):
             if 'type' not in json_data['data']:
-                raise BadRequest('/data/type', 'Missing type in "data" node')
+                raise exceptions.BadRequest.from_pointer_and_message(
+                    '/data/type',
+                    'Missing type in "data" node'
+                )
             if 'id' not in json_data['data']:
-                raise BadRequest('/data/id', 'Missing id in "data" node')
+                raise exceptions.BadRequest.from_pointer_and_message(
+                    '/data/id',
+                    'Missing id in "data" node')
             if json_data['data']['type'] != related_type_:
-                raise InvalidType('/data/type', 'The type field does not match the resource type')
+                raise exceptions.InvalidType.from_pointer_and_message(
+                    '/data/type',
+                    'The type field does not match the resource type'
+                )
         if isinstance(json_data['data'], list):
             for obj in json_data['data']:
                 if 'type' not in obj:
-                    raise BadRequest('/data/type', 'Missing type in "data" node')
+                    raise exceptions.BadRequest.from_pointer_and_message(
+                        '/data/type', 'Missing type in "data" node')
                 if 'id' not in obj:
-                    raise BadRequest('/data/id', 'Missing id in "data" node')
+                    raise exceptions.BadRequest.from_pointer_and_message(
+                        '/data/id',
+                        'Missing id in "data" node')
                 if obj['type'] != related_type_:
-                    raise InvalidType('/data/type', 'The type provided does not match the resource type')
+                    raise exceptions.InvalidType.from_pointer_and_message(
+                        '/data/type',
+                        'The type provided does not match the resource type')
 
-        obj_, updated = self._data_layer.create_relationship(json_data,
-                                                             model_relationship_field,
-                                                             related_id_field,
-                                                             kwargs)
+        obj_, updated = self.get_data_layer().create_relationship(
+            json_data,
+            model_relationship_field,
+            related_id_field,
+            kwargs)
 
-        qs = QSManager(request.args, self.schema)
+        qs = QSManager(self.request.arguments, self.schema)
         includes = qs.include
         if relationship_field not in qs.include:
             includes.append(relationship_field)
         schema = compute_schema(self.schema, dict(), qs, includes)
 
         if updated is False:
-            return '', 204
+            self._send_to_client(None)
+            return
 
         result = schema.dump(obj_).data
         if result.get('links', {}).get('self') is not None:
-            result['links']['self'] = request.path
-        return result, 200
+            result['links']['self'] = self.request.full_url()
+        return self._send_to_client(result)
 
     def patch(self, *args, **kwargs):
         """Update a relationship
         """
-        json_data = request.get_json()
+        json_data = escape.json_decode(self.request.body)
 
-        relationship_field, model_relationship_field, related_type_, related_id_field = self._get_relationship_data()
+        (relationship_field,
+         model_relationship_field,
+         related_type_,
+         related_id_field) = self._get_relationship_data()
 
         if 'data' not in json_data:
-            raise BadRequest('/data', 'You must provide data with a "data" route node')
+            raise exceptions.BadRequest.from_pointer_and_message(
+                '/data',
+                'You must provide data with a "data" route node')
         if isinstance(json_data['data'], dict):
             if 'type' not in json_data['data']:
-                raise BadRequest('/data/type', 'Missing type in "data" node')
+                raise exceptions.BadRequest.from_pointer_and_message(
+                    '/data/type', 'Missing type in "data" node')
             if 'id' not in json_data['data']:
-                raise BadRequest('/data/id', 'Missing id in "data" node')
+                raise exceptions.BadRequest.from_pointer_and_message(
+                    '/data/id', 'Missing id in "data" node')
             if json_data['data']['type'] != related_type_:
-                raise InvalidType('/data/type', 'The type field does not match the resource type')
+                raise exceptions.InvalidType.from_pointer_and_message(
+                    '/data/type',
+                    'The type field does not match the resource type')
+
         if isinstance(json_data['data'], list):
             for obj in json_data['data']:
                 if 'type' not in obj:
-                    raise BadRequest('/data/type', 'Missing type in "data" node')
+                    raise exceptions.BadRequest.from_pointer_and_message(
+                        '/data/type', 'Missing type in "data" node')
                 if 'id' not in obj:
-                    raise BadRequest('/data/id', 'Missing id in "data" node')
+                    raise exceptions.BadRequest.from_pointer_and_message(
+                        '/data/id', 'Missing id in "data" node')
                 if obj['type'] != related_type_:
-                    raise InvalidType('/data/type', 'The type provided does not match the resource type')
+                    raise exceptions.InvalidType.from_pointer_and_message(
+                        '/data/type',
+                        'The type provided does not match the resource type')
 
-        obj_, updated = self._data_layer.update_relationship(json_data,
-                                                             model_relationship_field,
-                                                             related_id_field,
-                                                             kwargs)
+        obj_, updated = self.get_data_layer().update_relationship(
+            json_data,
+            model_relationship_field,
+            related_id_field,
+            kwargs)
 
-        qs = QSManager(request.args, self.schema)
+        qs = QSManager(self.request.arguments, self.schema)
         includes = qs.include
         if relationship_field not in qs.include:
             includes.append(relationship_field)
         schema = compute_schema(self.schema, dict(), qs, includes)
 
         if updated is False:
-            return '', 204
+            self._send_to_client(None)
+            return
 
         result = schema.dump(obj_).data
         if result.get('links', {}).get('self') is not None:
-            result['links']['self'] = request.path
-        return result, 200
+            result['links']['self'] = self.request.full_url()
 
-    @check_method_requirements
+        self._send_to_client(result)
+
     def delete(self, *args, **kwargs):
         """Delete relationship(s)
         """
-        json_data = request.get_json()
+        json_data = escape.json_decode(self.request.body)
 
-        relationship_field, model_relationship_field, related_type_, related_id_field = self._get_relationship_data()
+        (relationship_field,
+         model_relationship_field,
+         related_type_,
+         related_id_field) = self._get_relationship_data()
 
         if 'data' not in json_data:
-            raise BadRequest('/data', 'You must provide data with a "data" route node')
+            raise exceptions.BadRequest.from_pointer_and_message(
+                '/data', 'You must provide data with a "data" route node')
         if isinstance(json_data['data'], dict):
             if 'type' not in json_data['data']:
-                raise BadRequest('/data/type', 'Missing type in "data" node')
+                raise exceptions.BadRequest.from_pointer_and_message(
+                    '/data/type', 'Missing type in "data" node')
             if 'id' not in json_data['data']:
-                raise BadRequest('/data/id', 'Missing id in "data" node')
+                raise exceptions.BadRequest.from_pointer_and_message(
+                    '/data/id', 'Missing id in "data" node')
             if json_data['data']['type'] != related_type_:
-                raise InvalidType('/data/type', 'The type field does not match the resource type')
+                raise exceptions.InvalidType.from_pointer_and_message(
+                    '/data/type',
+                    'The type field does not match the resource type')
+
         if isinstance(json_data['data'], list):
             for obj in json_data['data']:
                 if 'type' not in obj:
-                    raise BadRequest('/data/type', 'Missing type in "data" node')
+                    raise exceptions.BadRequest.from_pointer_and_message(
+                        '/data/type', 'Missing type in "data" node')
                 if 'id' not in obj:
-                    raise BadRequest('/data/id', 'Missing id in "data" node')
+                    raise exceptions.BadRequest.from_pointer_and_message(
+                        '/data/id', 'Missing id in "data" node')
                 if obj['type'] != related_type_:
-                    raise InvalidType('/data/type', 'The type provided does not match the resource type')
+                    raise exceptions.InvalidType.from_pointer_and_message(
+                        '/data/type',
+                        'The type provided does not match the resource type')
 
-        obj_, updated = self._data_layer.delete_relationship(json_data,
-                                                             model_relationship_field,
-                                                             related_id_field,
-                                                             kwargs)
+        obj_, updated = self.get_data_layer().delete_relationship(
+            json_data,
+            model_relationship_field,
+            related_id_field,
+            kwargs)
 
-        qs = QSManager(request.args, self.schema)
+        qs = QSManager(self.request.arguments, self.schema)
         includes = qs.include
         if relationship_field not in qs.include:
             includes.append(relationship_field)
@@ -434,22 +502,27 @@ class ResourceRelationship(Resource):
         status_code = 200 if updated is True else 204
         result = schema.dump(obj_).data
         if result.get('links', {}).get('self') is not None:
-            result['links']['self'] = request.path
-        return result, status_code
+            result['links']['self'] = self.request.full_url()
+
+        self._send_to_client(result, status_code)
 
     def _get_relationship_data(self):
         """Get useful data for relationship management
         """
-        relationship_field = request.path.split('/')[-1]
+        relationship_field = self.request.path.split('/')[-1]
 
         if relationship_field not in get_relationships(self.schema).values():
-            raise RelationNotFound('', "{} has no attribute {}".format(self.schema.__name__, relationship_field))
+            raise exceptions.RelationNotFound.from_pointer_and_message(
+                '', "{} has no attribute {}".format(self.schema.__name__,
+                                                    relationship_field))
 
-        related_type_ = self.schema._declared_fields[relationship_field].type_
-        related_id_field = self.schema._declared_fields[relationship_field].id_field
-        model_relationship_field = get_model_field(self.schema, relationship_field)
+        declared_field = self.schema._declared_fields[relationship_field]
+        related_type_ = declared_field.type_
+        related_id_field = declared_field.id_field
+        model_relationship_field = get_model_field(self.schema,
+                                                   relationship_field)
 
-        return relationship_field, model_relationship_field, related_type_, related_id_field
-
-
-
+        return (relationship_field,
+                model_relationship_field,
+                related_type_,
+                related_id_field)
