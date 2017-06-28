@@ -1,13 +1,15 @@
 from unittest.mock import Mock
 
 from tornado.testing import AsyncTestCase, gen_test
-from tornado_rest_jsonapi.model_connector import ModelConnector
+
+from tornado_rest_jsonapi.data_layers.base import BaseDataLayer
 
 
-class TestModelConnector(AsyncTestCase):
+class TestBaseDataLayer(AsyncTestCase):
     @gen_test
     def test_basic_expectations(self):
-        handler = ModelConnector(Mock(), Mock())
+        handler = BaseDataLayer(application=Mock(),
+                                current_user=Mock())
         with self.assertRaises(NotImplementedError):
             yield handler.create_object(Mock())
 

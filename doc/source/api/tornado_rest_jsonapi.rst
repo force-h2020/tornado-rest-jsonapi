@@ -1,6 +1,13 @@
 tornado_rest_jsonapi package
 ============================
 
+Subpackages
+-----------
+
+.. toctree::
+
+    tornado_rest_jsonapi.data_layers
+
 Submodules
 ----------
 
@@ -32,14 +39,6 @@ tornado_rest_jsonapi.exceptions module
 --------------------------------------
 
 .. automodule:: tornado_rest_jsonapi.exceptions
-    :members:
-    :undoc-members:
-    :show-inheritance:
-
-tornado_rest_jsonapi.model_connector module
--------------------------------------------
-
-.. automodule:: tornado_rest_jsonapi.model_connector
     :members:
     :undoc-members:
     :show-inheritance:

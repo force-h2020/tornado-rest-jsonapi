@@ -1,17 +1,16 @@
 from tornado import gen, log
 
 
-class ModelConnector:
-    """Base class for model connectors.
-    To implement a new ModelConnector class, inherit from this subclass
-    and reimplement the methods with the appropriate
-    logic.
+class BaseDataLayer:
+    """Base class for data layers
+    To implement a new data layer class, inherit from this subclass
+    and reimplement the methods with the appropriate logic.
 
-    The ModelConnector exports two member vars: application and current_user.
+    The Data Layer exports two member vars: application and current_user.
     They are equivalent to the members in the tornado web handler.
     """
 
-    def __init__(self, application, current_user):
+    def __init__(self, **kwargs):
         """Initializes the Resource with a given application and user instance
 
         Parameters
@@ -21,8 +20,10 @@ class ModelConnector:
         current_user:
             The current user as passed by the underlying RequestHandler.
         """
-        self.application = application
-        self.current_user = current_user
+
+        for k, v in kwargs.items():
+            setattr(self, k, v)
+
         self.log = log.app_log
 
     @gen.coroutine
