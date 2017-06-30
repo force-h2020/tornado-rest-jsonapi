@@ -104,17 +104,10 @@ class Resource(web.RequestHandler):
         self.write(escape.json_encode(response))
         self.flush()
 
-    def _send_created_to_client(self, identifier):
+    def _send_created_to_client(self, location):
         """Sends a created message to the client for a given resource
 
         """
-        url = self.request.full_url()
-
-        if identifier is not None:
-            url = url_path_join(url, identifier)
-
-        location = with_end_slash(url)
-
         self.set_status(int(http.client.CREATED))
         self.set_header("Location", location)
         self.clear_header('Content-Type')
@@ -125,11 +118,11 @@ class ResourceList(Resource):
     """Handler for URLs without an identifier.
     """
     @gen.coroutine
-    def get(self):
+    def get(self, **view_kwargs):
         data_layer = self.get_data_layer()
         qs = QSManager(self.request.arguments, self.schema)
 
-        items, total_num = yield data_layer.retrieve_collection(qs)
+        total_num, items = yield data_layer.get_collection(qs, view_kwargs)
 
         schema = compute_schema(self.schema,
                                 {"many": True},
@@ -142,7 +135,7 @@ class ResourceList(Resource):
         self._send_to_client(result)
 
     @gen.coroutine
-    def post(self):
+    def post(self, **view_kwargs):
         data_layer = self.get_data_layer()
         qs = QSManager(self.request.arguments, self.schema)
 
@@ -173,25 +166,18 @@ class ResourceList(Resource):
         if errors:
             raise exceptions.BadRequest(errors_from_jsonapi_errors(errors))
 
-        identifier = yield data_layer.create_object(data)
+        obj = yield data_layer.create_object(data, view_kwargs)
+        result = schema.dump(obj).data
 
-        self._send_created_to_client(identifier)
-
-    @gen.coroutine
-    def put(self):
-        """You cannot PUT on a collection"""
-        raise HTTPError(int(http.client.METHOD_NOT_ALLOWED))
-
-    @gen.coroutine
-    def delete(self):
-        raise HTTPError(int(http.client.METHOD_NOT_ALLOWED))
+        location = result['data']['links']['self']
+        self._send_created_to_client(location)
 
 
 class ResourceDetails(Resource):
     """Handler for URLs addressing a resource.
     """
     @gen.coroutine
-    def get(self, identifier):
+    def get(self, **view_kwargs):
         """Retrieves the resource representation."""
         data_layer = self.get_data_layer()
         qs = QSManager(self.request.arguments, self.schema)
@@ -200,14 +186,14 @@ class ResourceDetails(Resource):
                                 qs,
                                 qs.include)
 
-        obj = yield data_layer.retrieve_object(identifier)
+        obj = yield data_layer.get_object(view_kwargs)
 
         result = schema.dump(obj).data
 
         self._send_to_client(result)
 
     @gen.coroutine
-    def patch(self, identifier):
+    def patch(self, **view_kwargs):
         data_layer = self.get_data_layer()
         qs = QSManager(self.request.arguments, self.schema)
 
@@ -239,34 +225,39 @@ class ResourceDetails(Resource):
         if 'id' not in json_data['data']:
             raise exceptions.InvalidIdentifier()
 
-        if str(json_data['data']['id']) != identifier:
+        if json_data['data']['id'] != str(
+                view_kwargs[self.data_layer.get('url_field', 'id')]):
             raise exceptions.InvalidIdentifier()
 
-        updated_obj = yield data_layer.update_object(identifier, data)
+        obj = data_layer.get_object(view_kwargs)
+        updated_obj = yield data_layer.update_object(obj, data, view_kwargs)
 
         result = schema.dump(updated_obj).data
 
         self._send_to_client(result)
 
     @gen.coroutine
-    def post(self, identifier):
+    def post(self, **view_kwargs):
         """This operation is not possible in REST, and results
         in either Conflict or NotFound, depending on the
         presence of a resource at the given URL"""
         data_layer = self.get_data_layer()
 
         try:
-            yield data_layer.retrieve_object(identifier)
+            yield data_layer.get_object(**view_kwargs)
         except exceptions.ObjectNotFound:
             raise
         else:
             raise exceptions.ObjectAlreadyPresent()
 
     @gen.coroutine
-    def delete(self, identifier):
+    def delete(self, **view_kwargs):
         """Deletes the resource."""
+
         data_layer = self.get_data_layer()
 
-        yield data_layer.delete_object(identifier)
+        obj = data_layer.get_object(view_kwargs)
+        yield data_layer.delete_object(obj, view_kwargs)
 
-        self._send_to_client(None)
+        result = {'meta': {'message': 'Object successfully deleted'}}
+        self._send_to_client(result)
