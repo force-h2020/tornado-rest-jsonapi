@@ -5,12 +5,10 @@ from marshmallow import ValidationError
 from marshmallow_jsonapi.exceptions import IncorrectTypeError
 from tornado import web, gen, escape
 from tornado.log import app_log
-from tornado.web import HTTPError
 from . import exceptions
 from .errors import jsonapi_errors, errors_from_jsonapi_errors
 from .pagination import pagination_links
 from .schema import compute_schema
-from .utils import with_end_slash, url_path_join
 from .querystring import QueryStringManager as QSManager
 
 _CONTENT_TYPE_JSONAPI = 'application/vnd.api+json'
