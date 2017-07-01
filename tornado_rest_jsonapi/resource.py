@@ -43,14 +43,14 @@ class Resource(web.RequestHandler):
     def log(self):
         return app_log
 
-    def get_data_layer(self):
+    def get_data_layer_instance(self):
         data_layer_cls = self.data_layer["class"]
         data_layer_kwargs = dict(self.data_layer)
         data_layer_kwargs.pop("class", None)
         data_layer_kwargs["application"] = self.application
         data_layer_kwargs["current_user"] = self.current_user
 
-        return data_layer_cls(**data_layer_kwargs)
+        return data_layer_cls(data_layer_kwargs)
 
     def write_error(self, status_code, **kwargs):
         """Provides appropriate payload to the response in case of error.
@@ -117,7 +117,7 @@ class ResourceList(Resource):
     """
     @gen.coroutine
     def get(self, **view_kwargs):
-        data_layer = self.get_data_layer()
+        data_layer = self.get_data_layer_instance()
         qs = QSManager(self.request.arguments, self.schema)
 
         total_num, items = yield data_layer.get_collection(qs, view_kwargs)
@@ -134,7 +134,7 @@ class ResourceList(Resource):
 
     @gen.coroutine
     def post(self, **view_kwargs):
-        data_layer = self.get_data_layer()
+        data_layer = self.get_data_layer_instance()
         qs = QSManager(self.request.arguments, self.schema)
 
         json_data = escape.json_decode(self.request.body)
@@ -177,7 +177,7 @@ class ResourceDetails(Resource):
     @gen.coroutine
     def get(self, **view_kwargs):
         """Retrieves the resource representation."""
-        data_layer = self.get_data_layer()
+        data_layer = self.get_data_layer_instance()
         qs = QSManager(self.request.arguments, self.schema)
         schema = compute_schema(self.schema,
                                 {},
@@ -192,7 +192,7 @@ class ResourceDetails(Resource):
 
     @gen.coroutine
     def patch(self, **view_kwargs):
-        data_layer = self.get_data_layer()
+        data_layer = self.get_data_layer_instance()
         qs = QSManager(self.request.arguments, self.schema)
 
         json_data = escape.json_decode(self.request.body)
@@ -239,7 +239,7 @@ class ResourceDetails(Resource):
         """This operation is not possible in REST, and results
         in either Conflict or NotFound, depending on the
         presence of a resource at the given URL"""
-        data_layer = self.get_data_layer()
+        data_layer = self.get_data_layer_instance()
 
         try:
             yield data_layer.get_object(**view_kwargs)
@@ -252,7 +252,7 @@ class ResourceDetails(Resource):
     def delete(self, **view_kwargs):
         """Deletes the resource."""
 
-        data_layer = self.get_data_layer()
+        data_layer = self.get_data_layer_instance()
 
         obj = data_layer.get_object(view_kwargs)
         yield data_layer.delete_object(obj, view_kwargs)
