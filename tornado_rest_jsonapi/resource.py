@@ -116,7 +116,7 @@ class ResourceList(Resource):
     """Handler for URLs without an identifier.
     """
     @gen.coroutine
-    def get(self, **view_kwargs):
+    def get(self, *args, **view_kwargs):
         data_layer = self.get_data_layer_instance()
         qs = QSManager(self.request.arguments, self.schema)
 
@@ -133,7 +133,7 @@ class ResourceList(Resource):
         self._send_to_client(result)
 
     @gen.coroutine
-    def post(self, **view_kwargs):
+    def post(self, *args, **view_kwargs):
         data_layer = self.get_data_layer_instance()
         qs = QSManager(self.request.arguments, self.schema)
 
@@ -175,7 +175,7 @@ class ResourceDetails(Resource):
     """Handler for URLs addressing a resource.
     """
     @gen.coroutine
-    def get(self, **view_kwargs):
+    def get(self, *args, **view_kwargs):
         """Retrieves the resource representation."""
         data_layer = self.get_data_layer_instance()
         qs = QSManager(self.request.arguments, self.schema)
@@ -223,11 +223,11 @@ class ResourceDetails(Resource):
         if 'id' not in json_data['data']:
             raise exceptions.InvalidIdentifier()
 
-        if json_data['data']['id'] != str(
+        if str(json_data['data']['id']) != str(
                 view_kwargs[self.data_layer.get('url_field', 'id')]):
             raise exceptions.InvalidIdentifier()
 
-        obj = data_layer.get_object(view_kwargs)
+        obj = yield data_layer.get_object(view_kwargs)
         updated_obj = yield data_layer.update_object(obj, data, view_kwargs)
 
         result = schema.dump(updated_obj).data
@@ -235,26 +235,26 @@ class ResourceDetails(Resource):
         self._send_to_client(result)
 
     @gen.coroutine
-    def post(self, **view_kwargs):
+    def post(self, *args, **view_kwargs):
         """This operation is not possible in REST, and results
         in either Conflict or NotFound, depending on the
         presence of a resource at the given URL"""
         data_layer = self.get_data_layer_instance()
 
         try:
-            yield data_layer.get_object(**view_kwargs)
+            yield data_layer.get_object(view_kwargs)
         except exceptions.ObjectNotFound:
             raise
         else:
             raise exceptions.ObjectAlreadyPresent()
 
     @gen.coroutine
-    def delete(self, **view_kwargs):
+    def delete(self, *args, **view_kwargs):
         """Deletes the resource."""
 
         data_layer = self.get_data_layer_instance()
 
-        obj = data_layer.get_object(view_kwargs)
+        obj = yield data_layer.get_object(view_kwargs)
         yield data_layer.delete_object(obj, view_kwargs)
 
         result = {'meta': {'message': 'Object successfully deleted'}}

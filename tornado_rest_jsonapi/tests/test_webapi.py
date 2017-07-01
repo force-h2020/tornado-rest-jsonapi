@@ -236,8 +236,10 @@ class TestCRUDAPI(TestBase):
                                  "attributes": {
                                      "name": "john wick",
                                      "age": 49
-                                 }
+                                 },
+                                 "links": {"self": "/api/v1/students/0/"}
                              },
+                             "links": {"self": "/api/v1/students/0/"},
                              "jsonapi": {
                                  "version": "1.0"
                              }
