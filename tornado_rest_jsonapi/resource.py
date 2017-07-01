@@ -191,7 +191,7 @@ class ResourceDetails(Resource):
         self._send_to_client(result)
 
     @gen.coroutine
-    def patch(self, **view_kwargs):
+    def patch(self, *args, **view_kwargs):
         data_layer = self.get_data_layer_instance()
         qs = QSManager(self.request.arguments, self.schema)
 

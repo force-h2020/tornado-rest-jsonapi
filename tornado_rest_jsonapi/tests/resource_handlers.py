@@ -66,6 +66,10 @@ class WorkingDataLayer(BaseDataLayer):
 class StudentSchema(Schema):
     class Meta:
         type_ = "student"
+        self_url = '/api/v1/students/{id}/'
+        self_url_kwargs = {'id': '<id>'}
+        self_url_many = '/api/v1/students/'
+
     id = fields.Int()
     name = fields.String(required=True)
     age = fields.Int(required=True)

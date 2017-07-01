@@ -25,7 +25,7 @@ class TestBase(AsyncHTTPTestCase, LogTrapTestCase):
         api.route(
             resource_handlers.StudentDetails,
             "student",
-            "/students/(.*)/")
+            "/students/(?P<id>[0-9]+)/")
         return app
 
     def _create_one_student(self, name, age):
@@ -95,7 +95,7 @@ class TestCRUDAPI(TestBase):
         )
 
         self.assertEqual(res.code, http.client.CREATED)
-        self.assertIn("api/v1/students/0/", res.headers["Location"])
+        self.assertIn("/api/v1/students/0/", res.headers["Location"])
 
         res = self.fetch(
             "/api/v1/students/",
@@ -128,6 +128,7 @@ class TestCRUDAPI(TestBase):
                             'name': 'john wick'
                         },
                         'id': 0,
+                        'links': {'self': '/api/v1/students/0/'},
                         'type': 'student'
                     },
                     {
@@ -136,6 +137,7 @@ class TestCRUDAPI(TestBase):
                             'name': 'john wick'
                         },
                         'id': 1,
+                        'links': {'self': '/api/v1/students/1/'},
                         'type': 'student'
                     }
                 ],
@@ -158,7 +160,7 @@ class TestCRUDAPI(TestBase):
         )
         self.assertEqual(res.code, http.client.BAD_REQUEST)
 
-    def test_retrieve(self):
+    def test_get(self):
         location = self._create_one_student("john wick", 19)
 
         res = self.fetch(location)
@@ -170,14 +172,20 @@ class TestCRUDAPI(TestBase):
                 "data": {
                     "type": "student",
                     "id": 0,
+                    "links": {
+                        "self": "/api/v1/students/0/"
+                    },
                     "attributes": {
                         "name": "john wick",
                         "age": 19
-                    }
+                    },
+                },
+                "links": {
+                    "self": "/api/v1/students/0/"
                 },
                 "jsonapi": {
                     "version": "1.0"
-                }
+                },
             })
 
         res = self.fetch("/api/v1/students/1/")
@@ -271,7 +279,16 @@ class TestCRUDAPI(TestBase):
         location = self._create_one_student("john wick", 19)
 
         res = self.fetch(location, method="DELETE")
-        self.assertEqual(res.code, http.client.NO_CONTENT)
+        self.assertEqual(res.code, http.client.OK)
+        self.assertEqual(
+            escape.json_decode(res.body), {
+                'meta': {
+                    'message': 'Object successfully deleted'
+                },
+                "jsonapi": {
+                    "version": "1.0"
+                },
+            })
 
         res = self.fetch(location)
         self.assertEqual(res.code, http.client.NOT_FOUND)
