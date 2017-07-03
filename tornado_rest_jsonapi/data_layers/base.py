@@ -15,10 +15,9 @@ class BaseDataLayer:
 
         Parameters
         ----------
-        application: web.Application
-            The tornado web application
-        current_user:
-            The current user as passed by the underlying RequestHandler.
+        kwargs: dict
+            A dict of information. Each key will be set onto the instance
+            of the data layer as attributes
         """
 
         kwargs.pop('class', None)
