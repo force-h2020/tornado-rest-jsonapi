@@ -10,7 +10,10 @@ class JsonApiException(Exception):
     title = "Unknown error"
 
     def __init__(self, errors=None):
-        """Initialize a jsonapi exception
+        """Initialize a jsonapi exception.
+        It is different from an ordinary exception as it can host
+        multiple error conditions, and they can be serialized to a
+        JSONAPI representation for appropriate output.
 
         Parameters
         ----------
@@ -26,6 +29,8 @@ class JsonApiException(Exception):
         self.errors = errors
 
     def to_jsonapi(self):
+        """Converts the exception in a JSONAPI representation of
+        the contained information."""
         return [
             error.to_jsonapi()
             for error in self.errors
@@ -33,7 +38,20 @@ class JsonApiException(Exception):
 
     @classmethod
     def from_message(cls, message):
+        """Returns an instance of the exception class,
+        specifying the message"""
         return cls(errors=[Error(
+            title=cls.title,
+            status=cls.status,
+            detail=message
+        )])
+
+    @classmethod
+    def from_pointer_and_message(cls, pointer, message):
+        """Returns an instance of the exception class,
+        specifying the pointer and the message"""
+        return cls(errors=[Error(
+            source=Source(pointer=pointer),
             title=cls.title,
             status=cls.status,
             detail=message

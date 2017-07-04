@@ -2,7 +2,7 @@ import unittest
 
 from marshmallow_jsonapi import Schema
 from tornado_rest_jsonapi.exceptions import BadRequest, InvalidSort
-from tornado_rest_jsonapi.tests.resource_handlers import StudentSchema
+from tornado_rest_jsonapi.tests.resource_handlers import UserSchema
 from tornado_rest_jsonapi.querystring import QueryStringManager as QSManager
 
 
@@ -67,7 +67,7 @@ class TestQueryStringManager(unittest.TestCase):
         self.assertEqual(QSManager({}, Schema).sorting, [])
 
         self.assertEqual(
-            QSManager({"sort": [b"name,-age"]}, StudentSchema).sorting,
+            QSManager({"sort": [b"name,-age"]}, UserSchema).sorting,
             [
                 {
                     "order": 'asc',
@@ -80,5 +80,5 @@ class TestQueryStringManager(unittest.TestCase):
             ])
 
         with self.assertRaises(InvalidSort):
-            qs = QSManager({"sort": [b"created_at,-whatever"]}, StudentSchema)
+            qs = QSManager({"sort": [b"created_at,-whatever"]}, UserSchema)
             qs.sorting

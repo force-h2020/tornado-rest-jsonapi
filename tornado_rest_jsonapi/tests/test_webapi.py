@@ -13,28 +13,34 @@ from tornado_rest_jsonapi.tests.utils import AsyncHTTPTestCase
 class TestBase(AsyncHTTPTestCase, LogTrapTestCase):
     def setUp(self):
         super().setUp()
-        resource_handlers.StudentDetails.data_layer["class"].collection = \
+        resource_handlers.UserDetails.data_layer["class"].collection = \
             OrderedDict()
-        resource_handlers.StudentDetails.data_layer["class"].id = 0
+        resource_handlers.UserDetails.data_layer["class"].id = 0
 
     def get_app(self):
         app = web.Application(debug=True)
         app.hub = mock.Mock()
         api = Api(app, base_urlpath='/api/v1/')
-        api.route(resource_handlers.StudentList, "students", "/students/")
+        api.route(resource_handlers.UserList, "users", "/users/")
         api.route(
-            resource_handlers.StudentDetails,
-            "student",
-            "/students/(?P<id>[0-9]+)/")
+            resource_handlers.UserDetails,
+            "user",
+            "/users/(?P<id>[0-9]+)/")
+        api.route(resource_handlers.TeamList, "teams", "/teams/")
+        api.route(resource_handlers.TeamDetails,
+                  "team", "/teams/(?P<id>[0-9]+)/")
+        api.route(resource_handlers.TeamRelationship, 'team_users',
+                  '/teams/(?P<id>[0-9]+)/relationships/users')
+
         return app
 
-    def _create_one_student(self, name, age):
+    def _create_one_user(self, name, age):
         res = self.fetch(
-            "/api/v1/students/",
+            "/api/v1/users/",
             method="POST",
             body=escape.json_encode({
                 "data": {
-                    "type": "student",
+                    "type": "user",
                     "attributes": {
                         "name": name,
                         "age": age,
@@ -48,11 +54,11 @@ class TestBase(AsyncHTTPTestCase, LogTrapTestCase):
 
 class TestCRUDAPI(TestBase):
     def test_items(self):
-        res = self.fetch("/api/v1/students/")
+        res = self.fetch("/api/v1/users/")
 
         self.assertEqual(res.code, http.client.OK)
         payload = escape.json_decode(res.body)
-        self.assertIn("/api/v1/students/", payload['links']['self'])
+        self.assertIn("/api/v1/users/", payload['links']['self'])
         del payload['links']
         self.assertEqual(payload,
                          {'data': [],
@@ -60,7 +66,7 @@ class TestCRUDAPI(TestBase):
                               'version': '1.0'
                           }})
 
-        resource = resource_handlers.StudentDetails
+        resource = resource_handlers.UserDetails
         data_layer_cls = resource.data_layer["class"]
 
         data_layer_cls.collection[1] = dict(
@@ -76,16 +82,16 @@ class TestCRUDAPI(TestBase):
             name="john wick 3",
             age=39)
 
-        res = self.fetch("/api/v1/students/")
+        res = self.fetch("/api/v1/users/")
         self.assertEqual(res.code, http.client.OK)
 
     def test_create(self):
         res = self.fetch(
-            "/api/v1/students/",
+            "/api/v1/users/",
             method="POST",
             body=escape.json_encode({
                 "data": {
-                    "type": "student",
+                    "type": "user",
                     "attributes": {
                         "name": "john wick",
                         "age": 19,
@@ -95,14 +101,14 @@ class TestCRUDAPI(TestBase):
         )
 
         self.assertEqual(res.code, http.client.CREATED)
-        self.assertIn("/api/v1/students/0/", res.headers["Location"])
+        self.assertIn("/api/v1/users/0/", res.headers["Location"])
 
         res = self.fetch(
-            "/api/v1/students/",
+            "/api/v1/users/",
             method="POST",
             body=escape.json_encode({
                 "data": {
-                    "type": "student",
+                    "type": "user",
                     "attributes": {
                         "name": "john wick",
                         "age": 19,
@@ -111,12 +117,12 @@ class TestCRUDAPI(TestBase):
             })
         )
         self.assertEqual(res.code, http.client.CREATED)
-        self.assertIn("api/v1/students/1/", res.headers["Location"])
+        self.assertIn("api/v1/users/1/", res.headers["Location"])
 
-        res = self.fetch("/api/v1/students/")
+        res = self.fetch("/api/v1/users/")
         self.assertEqual(res.code, http.client.OK)
         payload = escape.json_decode(res.body)
-        self.assertIn('/api/v1/students/', payload['links']['self'])
+        self.assertIn('/api/v1/users/', payload['links']['self'])
         del payload["links"]
         self.assertEqual(
             payload,
@@ -128,8 +134,8 @@ class TestCRUDAPI(TestBase):
                             'name': 'john wick'
                         },
                         'id': 0,
-                        'links': {'self': '/api/v1/students/0/'},
-                        'type': 'student'
+                        'links': {'self': '/api/v1/users/0/'},
+                        'type': 'user'
                     },
                     {
                         'attributes': {
@@ -137,8 +143,8 @@ class TestCRUDAPI(TestBase):
                             'name': 'john wick'
                         },
                         'id': 1,
-                        'links': {'self': '/api/v1/students/1/'},
-                        'type': 'student'
+                        'links': {'self': '/api/v1/users/1/'},
+                        'type': 'user'
                     }
                 ],
                 'jsonapi': {'version': '1.0'}
@@ -147,11 +153,11 @@ class TestCRUDAPI(TestBase):
 
         # Missing mandatory entry
         res = self.fetch(
-            "/api/v1/students/",
+            "/api/v1/users/",
             method="POST",
             body=escape.json_encode({
                 'data': {
-                    "type": "student",
+                    "type": "user",
                     "attributes": {
                         "name": "john wick",
                     }
@@ -161,7 +167,7 @@ class TestCRUDAPI(TestBase):
         self.assertEqual(res.code, http.client.BAD_REQUEST)
 
     def test_get(self):
-        location = self._create_one_student("john wick", 19)
+        location = self._create_one_user("john wick", 19)
 
         res = self.fetch(location)
         self.assertEqual(res.code, http.client.OK)
@@ -170,10 +176,10 @@ class TestCRUDAPI(TestBase):
             escape.json_decode(res.body),
             {
                 "data": {
-                    "type": "student",
+                    "type": "user",
                     "id": 0,
                     "links": {
-                        "self": "/api/v1/students/0/"
+                        "self": "/api/v1/users/0/"
                     },
                     "attributes": {
                         "name": "john wick",
@@ -181,25 +187,25 @@ class TestCRUDAPI(TestBase):
                     },
                 },
                 "links": {
-                    "self": "/api/v1/students/0/"
+                    "self": "/api/v1/users/0/"
                 },
                 "jsonapi": {
                     "version": "1.0"
                 },
             })
 
-        res = self.fetch("/api/v1/students/1/")
+        res = self.fetch("/api/v1/users/1/")
         self.assertEqual(res.code, http.client.NOT_FOUND)
         # self.assertNotIn("Content-Type", res.headers)
 
     def test_post_on_resource(self):
-        location = self._create_one_student("john wick", 19)
+        location = self._create_one_user("john wick", 19)
         res = self.fetch(
             location,
             method="POST",
             body=escape.json_encode({
                 'data': {
-                    "type": "student",
+                    "type": "user",
                     "attributes": {
                         "name": "john wick 2",
                         "age": 34,
@@ -211,13 +217,13 @@ class TestCRUDAPI(TestBase):
         self.assertEqual(res.code, http.client.CONFLICT)
 
     def test_update(self):
-        location = self._create_one_student("john wick", 19)
+        location = self._create_one_user("john wick", 19)
         res = self.fetch(
             location,
             method="PATCH",
             body=escape.json_encode({
                 'data': {
-                    "type": "student",
+                    "type": "user",
                     "id": 0,
                     "attributes": {
                         "age": 49,
@@ -231,28 +237,28 @@ class TestCRUDAPI(TestBase):
         self.assertEqual(escape.json_decode(res.body),
                          {
                              "data": {
-                                 "type": "student",
+                                 "type": "user",
                                  "id": 0,
                                  "attributes": {
                                      "name": "john wick",
                                      "age": 49
                                  },
-                                 "links": {"self": "/api/v1/students/0/"}
+                                 "links": {"self": "/api/v1/users/0/"}
                              },
-                             "links": {"self": "/api/v1/students/0/"},
+                             "links": {"self": "/api/v1/users/0/"},
                              "jsonapi": {
                                  "version": "1.0"
                              }
                          })
 
     def test_update_errors(self):
-        location = self._create_one_student("john wick", 19)
+        location = self._create_one_user("john wick", 19)
         res = self.fetch(
             location,
             method="PATCH",
             body=escape.json_encode({
                 "data": {
-                    "type": "student",
+                    "type": "user",
                     "id": 0,
                     "attributes": {
                         "age": "hello",
@@ -263,11 +269,11 @@ class TestCRUDAPI(TestBase):
         self.assertEqual(res.code, http.client.BAD_REQUEST)
 
         res = self.fetch(
-            "/api/v1/students/1/",
+            "/api/v1/users/1/",
             method="PATCH",
             body=escape.json_encode({
                 "data": {
-                    "type": "student",
+                    "type": "user",
                     "id": 1,
                     "attributes": {
                         "age": 34,
@@ -278,7 +284,7 @@ class TestCRUDAPI(TestBase):
         self.assertEqual(res.code, http.client.NOT_FOUND)
 
     def test_delete(self):
-        location = self._create_one_student("john wick", 19)
+        location = self._create_one_user("john wick", 19)
 
         res = self.fetch(location, method="DELETE")
         self.assertEqual(res.code, http.client.OK)
@@ -295,22 +301,22 @@ class TestCRUDAPI(TestBase):
         res = self.fetch(location)
         self.assertEqual(res.code, http.client.NOT_FOUND)
 
-        res = self.fetch("/api/v1/students/1/", method="DELETE")
+        res = self.fetch("/api/v1/users/1/", method="DELETE")
         self.assertEqual(res.code, http.client.NOT_FOUND)
 
     def test_delete_collection(self):
-        res = self.fetch("/api/v1/students/", method="DELETE")
+        res = self.fetch("/api/v1/users/", method="DELETE")
         self.assertEqual(res.code, http.client.METHOD_NOT_ALLOWED)
 
     def test_put_collection(self):
-        res = self.fetch("/api/v1/students/",
+        res = self.fetch("/api/v1/users/",
                          method="PUT",
                          body=escape.json_encode({}))
         self.assertEqual(res.code, http.client.METHOD_NOT_ALLOWED)
 
     def test_post_non_json(self):
         res = self.fetch(
-            "/api/v1/students/",
+            "/api/v1/users/",
             method="POST",
             body="hello"
         )
@@ -322,10 +328,10 @@ class TestFilteringAPI(TestBase):
         super().setUp()
 
         for i in range(50):
-            self._create_one_student("john wick {}".format(i), age=10+i)
+            self._create_one_user("john wick {}".format(i), age=10+i)
 
     def test_no_filtering(self):
-        res = self.fetch("/api/v1/students/")
+        res = self.fetch("/api/v1/users/")
 
         self.assertEqual(res.code, http.client.OK)
         payload = escape.json_decode(res.body)
@@ -334,7 +340,7 @@ class TestFilteringAPI(TestBase):
         self.assertIn("?page%5Bnumber%5D=1", payload["links"]["next"])
         self.assertNotIn("prev", payload["links"])
 
-        res = self.fetch("/api/v1/students/?page%5Bnumber%5D=1")
+        res = self.fetch("/api/v1/users/?page%5Bnumber%5D=1")
         payload = escape.json_decode(res.body)
         self.assertEqual(len(payload["data"]), 10)
         self.assertIn("?page%5Bnumber%5D=2", payload["links"]["last"])
@@ -345,7 +351,7 @@ class TestFilteringAPI(TestBase):
 class TestErrors(TestBase):
     def test_invalid_type(self):
         res = self.fetch(
-            "/api/v1/students/",
+            "/api/v1/users/",
             method="POST",
             body=escape.json_encode({
                 "data": {
@@ -362,7 +368,7 @@ class TestErrors(TestBase):
         payload = escape.json_decode(res.body)
         self.assertEqual(payload, {
             'errors': [{
-                'detail': 'Invalid type. Expected "student".',
+                'detail': 'Invalid type. Expected "user".',
                 'source': {'pointer': '/data/type'},
                 'status': '409',
                 'title': 'Incorrect type'}],
@@ -370,11 +376,11 @@ class TestErrors(TestBase):
 
     def test_invalid_value(self):
         res = self.fetch(
-            "/api/v1/students/",
+            "/api/v1/users/",
             method="POST",
             body=escape.json_encode({
                 "data": {
-                    "type": "student",
+                    "type": "user",
                     "attributes": {
                         "name": "john wick",
                         "age": "hello",

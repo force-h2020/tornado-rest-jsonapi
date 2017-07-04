@@ -3,7 +3,7 @@ import unittest
 from unittest.mock import Mock
 
 from tornado_rest_jsonapi.api import Api
-from tornado_rest_jsonapi.tests.resource_handlers import StudentDetails
+from tornado_rest_jsonapi.tests.resource_handlers import UserDetails
 
 
 class TestApi(unittest.TestCase):
@@ -13,9 +13,9 @@ class TestApi(unittest.TestCase):
 
         # Register the classes.
         api.route(
-            StudentDetails,
-            "student",
-            "/students/(.*)/",
+            UserDetails,
+            "user",
+            "/users/(.*)/",
         )
 
         self.assertTrue(app.wildcard_router.add_rules.called)
@@ -25,15 +25,15 @@ class TestApi(unittest.TestCase):
         api = Api(app)
 
         api.route(
-            StudentDetails,
-            "student",
-            "/students/(.*)/",
+            UserDetails,
+            "user",
+            "/users/(.*)/",
         )
         with self.assertRaises(ValueError):
             api.route(
-                StudentDetails,
-                "student",
-                "/students/(.*)/",
+                UserDetails,
+                "user",
+                "/users/(.*)/",
             )
 
     def test_incorrect_class_registration(self):
@@ -43,15 +43,15 @@ class TestApi(unittest.TestCase):
         with self.assertRaises(TypeError):
             api.route(
                 "hello",
-                "student",
-                "/students/(.*)/",
+                "user",
+                "/users/(.*)/",
             )
 
         with self.assertRaises(TypeError):
             api.route(
                 int,
-                "student",
-                "/students/(.*)/",
+                "user",
+                "/users/(.*)/",
             )
 
     def test_authenticator(self):
