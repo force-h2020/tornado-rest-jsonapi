@@ -10,16 +10,17 @@ class BaseDataLayer:
     They are equivalent to the members in the tornado web handler.
     """
 
-    def __init__(self, **kwargs):
+    def __init__(self, kwargs):
         """Initializes the Resource with a given application and user instance
 
         Parameters
         ----------
-        application: web.Application
-            The tornado web application
-        current_user:
-            The current user as passed by the underlying RequestHandler.
+        kwargs: dict
+            A dict of information. Each key will be set onto the instance
+            of the data layer as attributes
         """
+
+        kwargs.pop('class', None)
 
         for k, v in kwargs.items():
             setattr(self, k, v)
@@ -27,7 +28,7 @@ class BaseDataLayer:
         self.log = log.app_log
 
     @gen.coroutine
-    def create_object(self, data, **kwargs):
+    def create_object(self, data, view_kwargs):
         """Called to create a resource with the given data.
         The member is passed with an instance of Resource, pre-filled
         with the data from the passed (and decoded) payload.
@@ -42,9 +43,13 @@ class BaseDataLayer:
             A dict of the data submitted as payload, already validated
             against the schema.
 
+        view_kwargs: dict
+            the keyword arguments passed at the view (via the URL
+            named capture groups)
+
         Returns
         -------
-        identifier: the model object
+        The generated model object. Must be serializable with the schema.
 
         Raises
         ------
@@ -57,20 +62,14 @@ class BaseDataLayer:
         raise NotImplementedError()
 
     @gen.coroutine
-    def retrieve_object(self, identifier, **kwargs):
+    def get_object(self, view_kwargs):
         """Called to retrieve a specific resource given its
         identifier. Correspond to a GET operation on the resource URL.
 
-        The method is called with an empty instance of the resource_class
-        (except for the identifier). At the end of the method, it must have
-        been filled with all the non-optional information.
-
-        This routine returns nothing.
-
         Parameters
         ----------
-        identifier:
-            the identifier of the object
+        view_kwargs: dict
+            The view kwargs as passed by the URL capture groups.
 
         Returns
         -------
@@ -87,21 +86,23 @@ class BaseDataLayer:
         raise NotImplementedError()
 
     @gen.coroutine
-    def update_object(self, identifier, data, **kwargs):
+    def update_object(self, obj, data, view_kwargs):
         """Called to update (partially) a specific Resource given its
         identifier with new data. Correspond to a PATCH operation on the
         Resource URL.
 
         Parameters
         ----------
-        identifier: str
-            The identifier of the object to update.
+        obj:
+            The object to patch.
         data: dict
             The validated dict of the data.
+        view_kwargs: dict
+            The view kwargs as extracted from the URL capture groups.
 
         Returns
         -------
-        None
+        True if the object has been modified, False otherwise.
 
         Raises
         ------
@@ -114,14 +115,16 @@ class BaseDataLayer:
         raise NotImplementedError()
 
     @gen.coroutine
-    def delete_object(self, identifier, **kwargs):
+    def delete_object(self, obj, view_kwargs):
         """Called to delete a specific resource given its identifier.
         Corresponds to a DELETE operation on the resource URL.
 
         Parameters
         ----------
-        identifier: str
-            The identifier of the object to delete
+        obj:
+            an object
+        view_kwargs: dict
+            the kwargs passed at the view via the URL capture groups.
 
         Returns
         -------
@@ -137,28 +140,113 @@ class BaseDataLayer:
         raise NotImplementedError()
 
     @gen.coroutine
-    def retrieve_collection(self, qs, **kwargs):
-        """Invoked when a request is performed to the collection
-        URL. Passes an empty items_response object that must be filled
-        with the relevant information.
-        Corresponds to a GET operation on the collection URL.
+    def get_collection(self, qs, view_kwargs):
+        """Invoked when a GET request is performed to the collection URL.
 
         Parameters
         ----------
-        offset: int or None
-            The offset requested in as a query argument.
-        limit: int or None
-            The maximum amount of elements to return.
+        qs:
+            The QueryManager information
+        view_kwargs: dict
+            The view kwargs passed by the URL capture groups
 
         Returns
         -------
-        items_response: ItemsResponse
-            An ItemsResponse instance with the details of the sublist
-            of presented items.
+        tuple: the total number of objects and the list of extracted objects.
 
         Raises
         ------
         NotImplementedError:
             If the resource collection does not support the method.
+        """
+        raise NotImplementedError()
+
+    def create_relationship(self, json_data, relationship_field,
+                            related_id_field, view_kwargs):
+        """Create a relationship
+
+        Parameters
+        ----------
+        json_data: dict
+            the request params
+        relationship_field: str
+            the model attribute used for relationship
+        related_id_field: str
+            the identifier field of the related model
+        view_kwargs: dict
+            kwargs from the resource view
+
+        Returns
+        -------
+        boolean: True if relationship have changed else False
+        """
+        raise NotImplementedError()
+
+    def get_relationship(self, relationship_field, related_type_,
+                         related_id_field, view_kwargs):
+        """Get information about a relationship
+
+        Parameters
+        ----------
+        relationship_field: str
+            the model attribute used for relationship
+        related_type_: str
+            the related resource type
+        related_id_field: str
+            the identifier field of the related model
+        view_kwargs: dict
+            kwargs from the resource view
+
+        Returns
+        -------
+        tuple: the object and related object(s)
+        """
+        raise NotImplementedError()
+
+    def update_relationship(self, json_data, relationship_field,
+                            related_id_field, view_kwargs):
+        """Update a relationship
+
+        Parameters
+        ----------
+        json_data: dict
+            the request params
+        relationship_field: str
+            the model attribute used for relationship
+        related_id_field: str
+            the identifier field of the related model
+        view_kwargs: dict
+            kwargs from the resource view
+
+        Returns
+        -------
+        boolean: True if relationship have changed else False
+        """
+        raise NotImplementedError()
+
+    def delete_relationship(self, json_data, relationship_field,
+                            related_id_field, view_kwargs):
+        """Delete a relationship
+
+        Parameters
+        ----------
+        json_data: dict
+            the request params
+        relationship_field: str
+            the model attribute used for relationship
+        related_id_field: str
+            the identifier field of the related model
+        view_kwargs: dict
+            kwargs from the resource view
+        """
+        raise NotImplementedError()
+
+    def query(self, view_kwargs):
+        """Construct the base query to retrieve wanted data
+
+        Parameters
+        ----------
+        view_kwargs: dict
+            kwargs from the resource view
         """
         raise NotImplementedError()

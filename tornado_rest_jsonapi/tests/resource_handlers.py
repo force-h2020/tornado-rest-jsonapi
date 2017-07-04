@@ -16,36 +16,37 @@ class WorkingDataLayer(BaseDataLayer):
     id = 0
 
     @gen.coroutine
-    def create_object(self, data, **kwargs):
+    def create_object(self, data, view_kwargs):
         id = str(type(self).id)
         data["id"] = id
         self.collection[id] = data
         type(self).id += 1
-        return id
+        return data
 
     @gen.coroutine
-    def retrieve_object(self, identifier, **kwargs):
+    def get_object(self, kwargs):
+        identifier = kwargs.get("id")
         if identifier not in self.collection:
             raise exceptions.ObjectNotFound()
 
         return self.collection[identifier]
 
     @gen.coroutine
-    def update_object(self, identifier, data, **kwargs):
-        if identifier not in self.collection:
-            raise exceptions.ObjectNotFound()
-
-        self.collection[identifier].update(data)
+    def update_object(self, obj, data, view_kwargs):
+        obj.update(data)
+        return True
 
     @gen.coroutine
-    def delete_object(self, identifier, **kwargs):
+    def delete_object(self, obj, view_kwargs):
+        identifier = view_kwargs.get("id")
+
         if identifier not in self.collection:
             raise exceptions.ObjectNotFound()
 
         del self.collection[identifier]
 
     @gen.coroutine
-    def retrieve_collection(self, qs, **kwargs):
+    def get_collection(self, qs, view_kwargs):
         pagination = qs.pagination
 
         number = pagination.get("number", 0)
@@ -59,12 +60,16 @@ class WorkingDataLayer(BaseDataLayer):
         #     values = [x for x in self.collection.values()]
 
         values = [x for x in self.collection.values()][interval]
-        return values, len(self.collection.values())
+        return len(self.collection.values()), values
 
 
 class StudentSchema(Schema):
     class Meta:
         type_ = "student"
+        self_url = '/api/v1/students/{id}/'
+        self_url_kwargs = {'id': '<id>'}
+        self_url_many = '/api/v1/students/'
+
     id = fields.Int()
     name = fields.String(required=True)
     age = fields.Int(required=True)
