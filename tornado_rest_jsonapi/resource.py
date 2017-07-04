@@ -8,12 +8,7 @@ from tornado.log import app_log
 from . import exceptions
 from .errors import jsonapi_errors, errors_from_jsonapi_errors
 from .pagination import pagination_links
-<<<<<<< HEAD
 from .schema import compute_schema, get_relationships, get_model_field
-from .utils import with_end_slash, url_path_join
-=======
-from .schema import compute_schema
->>>>>>> master
 from .querystring import QueryStringManager as QSManager
 
 _CONTENT_TYPE_JSONAPI = 'application/vnd.api+json'
