@@ -5,12 +5,15 @@ from marshmallow import ValidationError
 from marshmallow_jsonapi.exceptions import IncorrectTypeError
 from tornado import web, gen, escape
 from tornado.log import app_log
-from tornado.web import HTTPError
 from . import exceptions
 from .errors import jsonapi_errors, errors_from_jsonapi_errors
 from .pagination import pagination_links
+<<<<<<< HEAD
 from .schema import compute_schema, get_relationships, get_model_field
 from .utils import with_end_slash, url_path_join
+=======
+from .schema import compute_schema
+>>>>>>> master
 from .querystring import QueryStringManager as QSManager
 
 _CONTENT_TYPE_JSONAPI = 'application/vnd.api+json'
@@ -45,14 +48,14 @@ class Resource(web.RequestHandler):
     def log(self):
         return app_log
 
-    def get_data_layer(self):
+    def get_data_layer_instance(self):
         data_layer_cls = self.data_layer["class"]
         data_layer_kwargs = dict(self.data_layer)
         data_layer_kwargs.pop("class", None)
         data_layer_kwargs["application"] = self.application
         data_layer_kwargs["current_user"] = self.current_user
 
-        return data_layer_cls(**data_layer_kwargs)
+        return data_layer_cls(data_layer_kwargs)
 
     def write_error(self, status_code, **kwargs):
         """Provides appropriate payload to the response in case of error.
@@ -120,17 +123,10 @@ class Resource(web.RequestHandler):
         self.write(escape.json_encode(response))
         self.flush()
 
-    def _send_created_to_client(self, identifier):
+    def _send_created_to_client(self, location):
         """Sends a created message to the client for a given resource
 
         """
-        url = self.request.full_url()
-
-        if identifier is not None:
-            url = url_path_join(url, identifier)
-
-        location = with_end_slash(url)
-
         self.set_status(int(http.client.CREATED))
         self.set_header("Location", location)
         self.clear_header('Content-Type')
@@ -141,11 +137,11 @@ class ResourceList(Resource):
     """Handler for URLs without an identifier.
     """
     @gen.coroutine
-    def get(self):
-        data_layer = self.get_data_layer()
+    def get(self, *args, **view_kwargs):
+        data_layer = self.get_data_layer_instance()
         qs = QSManager(self.request.arguments, self.schema)
 
-        items, total_num = yield data_layer.retrieve_collection(qs)
+        total_num, items = yield data_layer.get_collection(qs, view_kwargs)
 
         schema = compute_schema(self.schema,
                                 {"many": True},
@@ -158,8 +154,8 @@ class ResourceList(Resource):
         self._send_to_client(result)
 
     @gen.coroutine
-    def post(self):
-        data_layer = self.get_data_layer()
+    def post(self, *args, **view_kwargs):
+        data_layer = self.get_data_layer_instance()
         qs = QSManager(self.request.arguments, self.schema)
 
         json_data = escape.json_decode(self.request.body)
@@ -189,42 +185,35 @@ class ResourceList(Resource):
         if errors:
             raise exceptions.BadRequest(errors_from_jsonapi_errors(errors))
 
-        identifier = yield data_layer.create_object(data)
+        obj = yield data_layer.create_object(data, view_kwargs)
+        result = schema.dump(obj).data
 
-        self._send_created_to_client(identifier)
-
-    @gen.coroutine
-    def put(self):
-        """You cannot PUT on a collection"""
-        raise HTTPError(int(http.client.METHOD_NOT_ALLOWED))
-
-    @gen.coroutine
-    def delete(self):
-        raise HTTPError(int(http.client.METHOD_NOT_ALLOWED))
+        location = result['data']['links']['self']
+        self._send_created_to_client(location)
 
 
 class ResourceDetails(Resource):
     """Handler for URLs addressing a resource.
     """
     @gen.coroutine
-    def get(self, identifier):
+    def get(self, *args, **view_kwargs):
         """Retrieves the resource representation."""
-        data_layer = self.get_data_layer()
+        data_layer = self.get_data_layer_instance()
         qs = QSManager(self.request.arguments, self.schema)
         schema = compute_schema(self.schema,
                                 {},
                                 qs,
                                 qs.include)
 
-        obj = yield data_layer.retrieve_object(identifier)
+        obj = yield data_layer.get_object(view_kwargs)
 
         result = schema.dump(obj).data
 
         self._send_to_client(result)
 
     @gen.coroutine
-    def patch(self, identifier):
-        data_layer = self.get_data_layer()
+    def patch(self, *args, **view_kwargs):
+        data_layer = self.get_data_layer_instance()
         qs = QSManager(self.request.arguments, self.schema)
 
         json_data = escape.json_decode(self.request.body)
@@ -255,37 +244,43 @@ class ResourceDetails(Resource):
         if 'id' not in json_data['data']:
             raise exceptions.InvalidIdentifier()
 
-        if str(json_data['data']['id']) != identifier:
+        if str(json_data['data']['id']) != str(
+                view_kwargs[self.data_layer.get('url_field', 'id')]):
             raise exceptions.InvalidIdentifier()
 
-        updated_obj = yield data_layer.update_object(identifier, data)
+        obj = yield data_layer.get_object(view_kwargs)
+        updated_obj = yield data_layer.update_object(obj, data, view_kwargs)
 
         result = schema.dump(updated_obj).data
 
         self._send_to_client(result)
 
     @gen.coroutine
-    def post(self, identifier):
+    def post(self, *args, **view_kwargs):
         """This operation is not possible in REST, and results
         in either Conflict or NotFound, depending on the
         presence of a resource at the given URL"""
-        data_layer = self.get_data_layer()
+        data_layer = self.get_data_layer_instance()
 
         try:
-            yield data_layer.retrieve_object(identifier)
+            yield data_layer.get_object(view_kwargs)
         except exceptions.ObjectNotFound:
             raise
         else:
             raise exceptions.ObjectAlreadyPresent()
 
     @gen.coroutine
-    def delete(self, identifier):
+    def delete(self, *args, **view_kwargs):
         """Deletes the resource."""
-        data_layer = self.get_data_layer()
 
-        yield data_layer.delete_object(identifier)
+        data_layer = self.get_data_layer_instance()
 
-        self._send_to_client(None)
+
+        obj = yield data_layer.get_object(view_kwargs)
+        yield data_layer.delete_object(obj, view_kwargs)
+
+        result = {'meta': {'message': 'Object successfully deleted'}}
+        self._send_to_client(result)
 
 
 class ResourceRelationship(Resource):
@@ -301,7 +296,7 @@ class ResourceRelationship(Resource):
         related_view = declared_field.related_view
         related_view_args = declared_field.related_view_args
 
-        data_layer = self.get_data_layer()
+        data_layer = self.get_data_layer_instance()
         obj, data = data_layer.get_relationship(
             model_relationship_field,
             related_type_,
@@ -367,7 +362,7 @@ class ResourceRelationship(Resource):
                         '/data/type',
                         'The type provided does not match the resource type')
 
-        obj_, updated = self.get_data_layer().create_relationship(
+        obj_, updated = self.get_data_layer_instance().create_relationship(
             json_data,
             model_relationship_field,
             related_id_field,
@@ -427,7 +422,7 @@ class ResourceRelationship(Resource):
                         '/data/type',
                         'The type provided does not match the resource type')
 
-        obj_, updated = self.get_data_layer().update_relationship(
+        obj_, updated = self.get_data_layer_instance().update_relationship(
             json_data,
             model_relationship_field,
             related_id_field,
@@ -487,7 +482,7 @@ class ResourceRelationship(Resource):
                         '/data/type',
                         'The type provided does not match the resource type')
 
-        obj_, updated = self.get_data_layer().delete_relationship(
+        obj_, updated = self.get_data_layer_instance().delete_relationship(
             json_data,
             model_relationship_field,
             related_id_field,
