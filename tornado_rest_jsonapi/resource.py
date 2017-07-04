@@ -270,7 +270,6 @@ class ResourceDetails(Resource):
 
         data_layer = self.get_data_layer_instance()
 
-
         obj = yield data_layer.get_object(view_kwargs)
         yield data_layer.delete_object(obj, view_kwargs)
 
